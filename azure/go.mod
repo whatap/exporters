@@ -12,5 +12,5 @@ require (
 	github.com/prometheus/procfs v0.0.6-0.20190917143953-de25ac347ef9 // indirect
 	golang.org/x/sys v0.0.0-20190919044723-0c1ff786ef13 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.8
 )
