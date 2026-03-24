@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -44,6 +45,8 @@ func (sc *SafeConfig) ReloadConfig(confFile string) (err error) {
 	if err := yaml.Unmarshal(yamlFile, c); err != nil {
 		return fmt.Errorf("Error parsing config file: %s", err)
 	}
+
+	c.Credentials.applyEnvOverrides()
 
 	if err := c.Validate(); err != nil {
 		return fmt.Errorf("Error validating config file: %s", err)
@@ -156,6 +159,28 @@ type Credentials struct {
 	TenantID       string `yaml:"tenant_id"`
 
 	XXX map[string]interface{} `yaml:",inline"`
+}
+
+// applyEnvOverrides overrides credential fields with environment variables if set.
+// Environment variables take precedence over YAML config values.
+//
+//	AZURE_SUBSCRIPTION_ID
+//	AZURE_TENANT_ID
+//	AZURE_CLIENT_ID
+//	AZURE_CLIENT_SECRET
+func (cred *Credentials) applyEnvOverrides() {
+	if v := os.Getenv("AZURE_SUBSCRIPTION_ID"); v != "" {
+		cred.SubscriptionID = v
+	}
+	if v := os.Getenv("AZURE_TENANT_ID"); v != "" {
+		cred.TenantID = v
+	}
+	if v := os.Getenv("AZURE_CLIENT_ID"); v != "" {
+		cred.ClientID = v
+	}
+	if v := os.Getenv("AZURE_CLIENT_SECRET"); v != "" {
+		cred.ClientSecret = v
+	}
 }
 
 // Target represents Azure target resource and its associated metric definitions

@@ -14,16 +14,16 @@ Allows for the exporting of metrics from Azure applications using the [Azure mon
 
 ```bash
 # Linux amd64
-GOOS=linux GOARCH=amd64 go build -o azure_metrics_exporter_linux_amd64
+GOOS=linux GOARCH=amd64 go build -o azure_metrics_exporter
 
 # Linux arm64
-GOOS=linux GOARCH=arm64 go build -o azure_metrics_exporter_linux_arm64
+GOOS=linux GOARCH=arm64 go build -o azure_metrics_exporter
 
 # macOS amd64
-GOOS=darwin GOARCH=amd64 go build -o azure_metrics_exporter_darwin_amd64
+GOOS=darwin GOARCH=amd64 go build -o azure_metrics_exporter
 
 # macOS arm64 (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build -o azure_metrics_exporter_darwin_arm64
+GOOS=darwin GOARCH=arm64 go build -o azure_metrics_exporter
 ```
 
 ## Usage
@@ -68,54 +68,63 @@ If you won't provide `active_directory_authority_url` and `resource_manager_url`
 You can find endpoints for national clouds [here](http://www.azurespeed.com/Information/AzureEnvironments)
 
 ```yaml
-active_directory_authority_url: "https://login.microsoftonline.com/"
-resource_manager_url: "https://management.azure.com/"
 credentials:
-  subscription_id: <secret>
-  client_id: <secret>
-  client_secret: <secret>
-  tenant_id: <secret>
+  subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  tenant_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  client_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  client_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 targets:
-  - resource: "azure_resource_id"
+  # aggregations 미지정 시 Total/Average/Minimum/Maximum 모두 수집
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
     metrics:
-    - name: "BytesReceived"
-      aggregations:
-        - "Total"
-        - "Average"
-    - name: "BytesSent"
-      aggregations:
-        - "Total"
-  - resource: "azure_resource_id"
-    # resource-level aggregation (fallback for metrics without their own aggregations)
+      - name: cpu_percent
+      - name: memory_percent
+
+  # resource-level aggregation: 하위 metric에 개별 지정이 없으면 이 값을 사용
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
     aggregations:
-      - "Average"
+      - Average
     metrics:
-    - name: "Http2xx"
-    - name: "Http5xx"
-      aggregations:
-        - "Total"
-        - "Maximum"
-  - resource: "azure_resource_id"
-    metric_namespace: "Azure.VM.Windows.GuestMetrics"
+      - name: cpu_percent
+      - name: memory_percent
+
+  # metric-level aggregation: 같은 resource 안에서 metric마다 다른 aggregation 지정
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
+    aggregations:
+      - Average
     metrics:
-    - name: 'Process\Thread Count'
-      aggregations:
-        - "Average"
-        - "Maximum"
+      - name: cpu_percent                # → Average (resource-level fallback)
+      - name: memory_percent             # → Average (resource-level fallback)
+      - name: storage_percent
+        aggregations:
+          - Maximum                      # → Maximum (metric-level override)
+      - name: iops
+        aggregations:
+          - Total
+          - Maximum                      # → Total, Maximum (metric-level override)
+
+  # 20개 초과 시 target 분리 예시
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
+    aggregations:
+      - Maximum
+    metrics:
+      - name: storage_percent
+      - name: iops
+      # ... 최대 20개
 
 resource_groups:
   - resource_group: "webapps"
     resource_types:
-    - "Microsoft.Compute/virtualMachines"
+      - "Microsoft.Compute/virtualMachines"
     resource_name_include_re:
-    - "testvm.*"
+      - "testvm.*"
     resource_name_exclude_re:
-    - "testvm12"
+      - "testvm12"
     metrics:
-    - name: "CPU Credits Consumed"
-      aggregations:
-        - "Average"
+      - name: "CPU Credits Consumed"
+        aggregations:
+          - "Average"
 
 resource_tags:
   - resource_tag_name: "group"

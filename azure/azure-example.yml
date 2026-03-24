@@ -1,36 +1,47 @@
 credentials:
-  subscription_id: <secret>
-  client_id: <secret>
-  client_secret: <secret>
-  tenant_id: <secret>
+  subscription_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  tenant_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  client_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  client_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 targets:
-  - resource: "/resourceGroups/blog-group/providers/Microsoft.Web/sites/blog"
+  # No aggregations specified: collects all (Total/Average/Minimum/Maximum)
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
     metrics:
-      - name: "BytesReceived"
-        aggregations:
-          - "Total"
-          - "Average"
-      - name: "BytesSent"
-        aggregations:
-          - "Total"
-  - resource: "/resourceGroups/app-group/providers/Microsoft.Web/sites/app"
-    # resource-level aggregation: used as fallback for metrics without their own aggregations
+      - name: cpu_percent
+      - name: memory_percent
+
+  # Resource-level aggregation: applies to all metrics as fallback
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
     aggregations:
-      - "Average"
+      - Average
     metrics:
-      - name: "Http2xx"
-      - name: "Http5xx"
+      - name: cpu_percent
+      - name: memory_percent
+
+  # Per-metric aggregation: different aggregations for each metric within the same resource
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
+    aggregations:
+      - Average
+    metrics:
+      - name: cpu_percent              # -> Average (resource-level fallback)
+      - name: memory_percent           # -> Average (resource-level fallback)
+      - name: storage_percent
         aggregations:
-          - "Total"
-          - "Maximum"
-  - resource: "/resourceGroups/vm-group/providers/Microsoft.Compute/virtualMachines/vm"
-    metric_namespace: "Azure.VM.Windows.GuestMetrics"
+          - Maximum                    # -> Maximum (metric-level override)
+      - name: iops
+        aggregations:
+          - Total
+          - Maximum                    # -> Total, Maximum (metric-level override)
+
+  # Split targets when exceeding 20 metrics per target
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
+    aggregations:
+      - Maximum
     metrics:
-    - name: 'Process\Thread Count'
-      aggregations:
-        - "Average"
-        - "Maximum"
+      - name: storage_percent
+      - name: iops
+      # ... up to 20 metrics per target
 
 resource_groups:
   - resource_group: "webapps"
@@ -51,7 +62,7 @@ resource_tags:
     resource_types:
       - "Microsoft.Compute/virtualMachines"
     metrics:
-      - name: "CPU Credits consumed"
+      - name: "CPU Credits Consumed"
         aggregations:
           - "Average"
           - "Maximum"
