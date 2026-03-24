@@ -12,27 +12,31 @@ Allows for the exporting of metrics from Azure applications using the [Azure mon
 
 ### Build from source
 
-Version and release date can be embedded at build time using `-ldflags`:
+Edit `build.txt` to set version and release date, then run `build.sh`:
 
-```bash
-VERSION=1.0.0
-RELEASE_DATE=$(date +%Y-%m-%d)
-LDFLAGS="-X main.version=${VERSION} -X main.releaseDate=${RELEASE_DATE}"
-
-# Linux amd64
-GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o bin/linux/amd64/azure_metrics_exporter
-
-# Linux arm64
-GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o bin/linux/arm64/azure_metrics_exporter
-
-# macOS amd64
-GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o bin/darwin/amd64/azure_metrics_exporter
-
-# macOS arm64 (Apple Silicon)
-GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o bin/darwin/arm64/azure_metrics_exporter
+```
+# build.txt
+version=1.0.0
+release_date=2026-03-24
 ```
 
-If built without `-ldflags`, defaults to `version=dev`, `releaseDate=unknown`.
+```bash
+./build.sh
+```
+
+This builds all platform/arch combinations under `bin/`:
+
+```
+bin/
+├── linux/
+│   ├── amd64/azure_metrics_exporter
+│   └── arm64/azure_metrics_exporter
+└── darwin/
+    ├── amd64/azure_metrics_exporter
+    └── arm64/azure_metrics_exporter
+```
+
+If built without `build.txt`, defaults to `version=dev`, `releaseDate=unknown`.
 
 ## Usage
 ```bash
