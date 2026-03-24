@@ -1,0 +1,218 @@
+================================================================================
+  NCloud Exporter - 프로젝트 상세 흐름 설명
+================================================================================
+
+1. 프로젝트 개요
+--------------------------------------------------------------------------------
+ncloud_exporter는 NCloud(네이버 클라우드 플랫폼)의 Cloud Insight 모니터링 데이터를
+Prometheus 메트릭 형태로 변환하여 노출하는 Exporter입니다.
+
+Prometheus가 /metrics 엔드포인트를 스크래핑하면, Exporter가 NCloud Cloud Insight API를
+호출하여 실시간 메트릭 데이터를 수집하고 Prometheus 포맷으로 응답합니다.
+
+지원 서비스:
+  - vserver (VPC 서버)
+  - vloadbalancer (VPC 로드밸런서)
+  - vautoscaling (VPC 오토스케일링)
+  - vmysql, vpostgresql, vredis, vmongodb, vmssql (매니지드 DB)
+  - vnks (Ncloud Kubernetes Service)
+  - vsearchengine (Search Engine Service)
+  - vhadoop (Cloud Hadoop)
+
+
+2. 디렉토리 구조
+--------------------------------------------------------------------------------
+ncloud_exporter/
+├── main.go                  # 엔트리포인트 - 설정 로드, 클라이언트 초기화, HTTP 서버 시작
+├── config/
+│   └── config.go            # YAML 설정 파일 파싱 및 구조체 정의
+├── ncloud/
+│   ├── auth.go              # NCloud API 인증 (HMAC-SHA256 서명 생성)
+│   ├── client.go            # HTTP 클라이언트 (인증 헤더 자동 첨부, 재시도 로직)
+│   ├── cloudinsight.go      # Cloud Insight API 클라이언트 (메트릭 조회/데이터 쿼리)
+│   └── resource.go          # 리소스 디스커버리 (인스턴스 목록 조회, 리전 조회)
+├── collector/
+│   ├── collector.go         # Prometheus Collector 구현 (수집 오케스트레이션)
+│   └── metrics.go           # 메트릭명 정규화, 데이터포인트 추출 유틸리티
+├── ncloud.yaml       # 설정 파일 (API 키, 네임스페이스, exporter 설정)
+├── config.example.yaml      # 설정 파일 예시
+├── Dockerfile               # Docker 빌드 (멀티스테이지)
+├── go.mod / go.sum          # Go 모듈 의존성
+└── ncloud_exporter          # 빌드된 바이너리
+
+
+3. 실행 흐름 (시작 ~ Prometheus 스크래핑까지)
+--------------------------------------------------------------------------------
+
+[STEP 1] 프로그램 시작 (main.go)
+  │
+  ├─ flag로 --config 파라미터 파싱 (기본값: ncloud.yaml)
+  ├─ config.Load()로 YAML 설정 파일 로드
+  │   ├─ 파일 읽기 (os.ReadFile)
+  │   ├─ YAML 파싱 (yaml.Unmarshal)
+  │   ├─ 환경변수 오버라이드 (NCLOUD_ACCESS_KEY, NCLOUD_SECRET_KEY)
+  │   └─ 필수값 검증 (access_key, secret_key)
+  │
+  ├─ NCloud 클라이언트 생성
+  │   ├─ ncloud.NewClient(accessKey, secretKey)        → 기본 HTTP 클라이언트
+  │   ├─ ncloud.NewCloudInsightClient(client)          → Cloud Insight API 클라이언트
+  │   └─ ncloud.NewResourceClient(client)              → 리소스 디스커버리 클라이언트
+  │
+  ├─ collector.NewNCloudCollector() 생성
+  │
+  ├─ coll.InitCWKeys()  ← Cloud Insight Product Key 초기화
+  │   │
+  │   ├─ GET /cw_fea/real/cw/api/schema/system/list 호출
+  │   │   (모든 서비스의 prodName → cw_key 매핑을 가져옴)
+  │   │
+  │   └─ 결과를 cwKeys 맵에 저장 (예: "ncloud.vserver" → "xxxxxxxx")
+  │
+  ├─ prometheus.MustRegister(coll)  ← Collector를 Prometheus에 등록
+  │
+  └─ HTTP 서버 시작
+      ├─ GET /metrics   → promhttp.Handler() (Prometheus 스크래핑 엔드포인트)
+      └─ GET /          → 간단한 HTML 랜딩 페이지
+
+
+[STEP 2] Prometheus가 /metrics를 스크래핑할 때 (collector.go - Collect)
+  │
+  ├─ 설정에서 enabled: true인 namespace마다 collectNamespace() 호출
+  │
+  └─ collectNamespace(ns) 처리 흐름:
+      │
+      ├── (a) ServiceDef 조회
+      │   └─ KnownServices 맵에서 namespace에 해당하는 서비스 정의 조회
+      │      (API 경로, ID 필드명, 리스트 필드명 등)
+      │
+      ├── (b) CW Key 조회
+      │   └─ InitCWKeys에서 캐싱한 cwKeys 맵에서 해당 namespace의 cw_key 조회
+      │
+      ├── (c) 인스턴스 목록 조회 (5분 캐시)
+      │   ├─ 캐시 유효 → 캐시된 인스턴스 반환
+      │   └─ 캐시 만료 →
+      │       ├─ 설정에 regions이 지정됨 → 해당 리전만 조회
+      │       └─ regions가 비어있음 → GetRegions()로 전체 리전 조회 후 각 리전별 조회
+      │       │
+      │       └─ ListInstances(svc, regionCode):
+      │           ├─ GET {basePath}{listPath}?responseFormatType=json&regionCode={region}
+      │           ├─ JSON 응답에서 ListField에 해당하는 배열 추출
+      │           └─ Instance 구조체로 변환 (InstanceNo + Tags 맵)
+      │
+      ├── (d) 메트릭 정의 조회 (5분 캐시)
+      │   ├─ 캐시 유효 → 캐시된 메트릭 정의 반환
+      │   └─ 캐시 만료 →
+      │       └─ POST /cw_fea/real/cw/api/rule/group/metric/search
+      │          body: { prodKey: cw_key, query: "" }
+      │          → 해당 서비스에서 수집 가능한 모든 메트릭 목록 반환
+      │            (메트릭명, 단위, 집계 옵션, 차원 정보 등)
+      │
+      ├── (e) 배치 쿼리 구성 및 실행
+      │   │
+      │   │  [3중 루프: 메트릭 × 인스턴스 × 집계방식]
+      │   │
+      │   ├─ 각 메트릭의 Min5 인터벌에서 지원하는 집계 방식 조회
+      │   │   (없으면 기본 "AVG")
+      │   │
+      │   ├─ 각 인스턴스의 InstanceNo를 dimension 값으로 사용
+      │   │
+      │   ├─ MetricInfo 구조체를 batch 배열에 추가
+      │   │   { aggregation, dimensions, interval, metric, prodKey }
+      │   │
+      │   ├─ batch가 20개(MultiQueryDataLimit)에 도달하면 flushBatch() 실행:
+      │   │   │
+      │   │   ├─ POST /cw_fea/real/cw/api/data/query/multiple
+      │   │   │   body: { metricInfoList: [...20개], timeStart, timeEnd }
+      │   │   │   (최근 5분 윈도우의 데이터 조회)
+      │   │   │
+      │   │   └─ 응답 처리:
+      │   │       ├─ 각 결과에서 최신 데이터포인트 추출 (ExtractLatestDatapoint)
+      │   │       ├─ Prometheus 메트릭명 생성: ncloud_{namespace}_{metric}_{aggregation}
+      │   │       ├─ 인스턴스 태그를 라벨로 변환 (instanceNo, instanceName, regionCode 등)
+      │   │       └─ prometheus.NewConstMetric()으로 GaugeValue 생성 → ch에 전송
+      │   │
+      │   └─ 루프 종료 후 남은 batch도 flushBatch()
+      │
+      └── (f) 스크래핑 메타 메트릭 전송
+          ├─ ncloud_scrape_errors_total{namespace="..."} → namespace별 에러 수
+          └─ ncloud_scrape_duration_seconds              → 전체 스크래핑 소요 시간
+
+
+4. NCloud API 인증 흐름 (auth.go)
+--------------------------------------------------------------------------------
+모든 NCloud API 요청에는 HMAC-SHA256 서명이 필요합니다.
+
+  SignRequest(req, accessKey, secretKey):
+    1. 현재 시간을 밀리초 타임스탬프로 생성
+    2. 서명 메시지 구성: "{METHOD} {URI}\n{timestamp}\n{accessKey}"
+    3. secretKey로 HMAC-SHA256 해시 생성
+    4. Base64 인코딩
+    5. 요청 헤더에 추가:
+       - x-ncp-apigw-timestamp: 타임스탬프
+       - x-ncp-iam-access-key: 액세스 키
+       - x-ncp-apigw-signature-v2: 서명값
+
+
+5. HTTP 클라이언트 재시도 로직 (client.go)
+--------------------------------------------------------------------------------
+  - 최대 3회 재시도 (maxRetries = 3)
+  - HTTP 410 (Throttle Limited) 응답시에만 재시도
+  - 지수 백오프: 5초 → 10초 → 20초 (initialBackoff = 5s, 매번 2배)
+  - 그 외 에러는 즉시 반환
+
+
+6. 캐싱 전략 (collector.go)
+--------------------------------------------------------------------------------
+  - 인스턴스 목록 캐시: 5분 TTL (namespace별)
+  - 메트릭 정의 캐시: 5분 TTL (cw_key별)
+  - CW Key 맵: 프로그램 시작 시 1회 로드 (재시작 전까지 유지)
+  → Prometheus 스크래핑마다 API를 호출하지 않고, 캐시가 유효하면 재사용
+
+
+7. 메트릭 이름 변환 규칙 (metrics.go)
+--------------------------------------------------------------------------------
+  원본 메트릭: "cpu_used_rto" (namespace: "ncloud.vserver", aggregation: "AVG")
+  →  ncloud_vserver_cpu_used_rto_avg
+
+  변환 과정:
+    1. namespace에서 "ncloud." 접두사 제거 → "vserver"
+    2. 메트릭명 소문자 변환 + 특수문자 제거
+    3. 집계방식 소문자 변환
+    4. "ncloud_" + namespace + "_" + metric + "_" + aggregation
+
+
+8. 설정 파일 구조 (ncloud.yaml)
+--------------------------------------------------------------------------------
+  ncloud:
+    access_key: "..."        # NCloud API Access Key (또는 환경변수 NCLOUD_ACCESS_KEY)
+    secret_key: "..."        # NCloud API Secret Key (또는 환경변수 NCLOUD_SECRET_KEY)
+
+  exporter:
+    listen_address: ":9850"  # HTTP 리스닝 주소
+    metrics_path: "/metrics" # Prometheus 메트릭 경로
+    scrape_interval: 300     # 스크래핑 간격 (초, Cloud Insight 최소 간격)
+
+  namespaces:                # 모니터링할 NCloud 서비스 목록
+    - name: "ncloud.vserver"
+      enabled: true
+      regions: ["KR"]        # 빈 배열이면 전체 리전 자동 조회
+
+
+9. Docker 실행 흐름
+--------------------------------------------------------------------------------
+  - 멀티스테이지 빌드 (golang:1.22-alpine → alpine:3.19)
+  - 바이너리: /usr/local/bin/ncloud_exporter
+  - 설정 파일 마운트: /etc/ncloud_exporter/ncloud.yaml
+  - 포트: 9850
+  - 실행: ncloud_exporter --config /etc/ncloud_exporter/ncloud.yaml
+
+
+10. 환경변수
+--------------------------------------------------------------------------------
+  NCLOUD_ACCESS_KEY    → ncloud.access_key 설정 오버라이드
+  NCLOUD_SECRET_KEY    → ncloud.secret_key 설정 오버라이드
+  NCLOUD_CW_API_GW     → Cloud Insight API 엔드포인트 오버라이드
+                          (기본값: https://cw.apigw.ntruss.com)
+  NCLOUD_API_GW        → NCloud API Gateway 엔드포인트 오버라이드
+                          (기본값: https://ncloud.apigw.ntruss.com)
+
+================================================================================
