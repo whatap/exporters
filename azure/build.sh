@@ -21,16 +21,16 @@ LDFLAGS="-X main.version=${VERSION} -X main.releaseDate=${RELEASE_DATE}"
 
 echo "Building azure_metrics_exporter v${VERSION} (${RELEASE_DATE})"
 
-GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/linux/amd64/azure_metrics_exporter"
+GOOS=linux GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/amd64/azure_metrics_exporter"
 echo "  -> bin/linux/amd64/azure_metrics_exporter"
 
-GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/linux/arm64/azure_metrics_exporter"
+GOOS=linux GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/arm64/azure_metrics_exporter"
 echo "  -> bin/linux/arm64/azure_metrics_exporter"
 
-GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/darwin/amd64/azure_metrics_exporter"
-echo "  -> bin/darwin/amd64/azure_metrics_exporter"
-
-GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/darwin/arm64/azure_metrics_exporter"
-echo "  -> bin/darwin/arm64/azure_metrics_exporter"
+#GOOS=darwin GOARCH=amd64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/bin/darwin/amd64/azure_metrics_exporter"
+#echo "  -> bin/darwin/amd64/azure_metrics_exporter"
+#
+#GOOS=darwin GOARCH=arm64 go build -ldflags "${LDFLAGS}" -o "${SCRIPT_DIR}/azure_metrics_exporter_darwin_arm64"
+#echo "  -> bin/darwin/arm64/azure_metrics_exporter"
 
 echo "Done."
