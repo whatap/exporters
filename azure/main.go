@@ -18,6 +18,10 @@ import (
 )
 
 var (
+	// Build-time variables injected via -ldflags
+	version     = "dev"
+	releaseDate = "unknown"
+
 	sc = &config.SafeConfig{
 		C: &config.Config{},
 	}
@@ -26,6 +30,7 @@ var (
 	listenAddress         = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests.").Default(":9276").String()
 	listMetricDefinitions = kingpin.Flag("list.definitions", "List available metric definitions for the given resources and exit.").Bool()
 	listMetricNamespaces  = kingpin.Flag("list.namespaces", "List available metric namespaces for the given resources and exit.").Bool()
+	showVersion           = kingpin.Flag("version", "Print version and exit.").Bool()
 	invalidMetricChars    = regexp.MustCompile("[^a-zA-Z0-9_:]")
 	azureErrorDesc        = prometheus.NewDesc("azure_error", "Error collecting metrics", nil, nil)
 	batchSize             = 20
@@ -301,6 +306,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+
+	if *showVersion {
+		fmt.Printf("azure_metrics_exporter version %s (released %s)\n", version, releaseDate)
+		os.Exit(0)
+	}
+
 	if err := sc.ReloadConfig(*configFile); err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
@@ -360,7 +371,7 @@ func main() {
 	})
 
 	http.HandleFunc("/metrics", handler)
-	log.Printf("azure_metrics_exporter listening on port %v", *listenAddress)
+	log.Printf("azure_metrics_exporter %s (released %s) listening on port %v", version, releaseDate, *listenAddress)
 	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
 		log.Fatalf("Error starting HTTP server: %v", err)
 	}
