@@ -1,6 +1,3 @@
----
-active_directory_authority_url: "https://login.microsoftonline.com/"
-resource_manager_url: "https://management.azure.com/"
 credentials:
   subscription_id: <secret>
   client_id: <secret>
@@ -11,15 +8,29 @@ targets:
   - resource: "/resourceGroups/blog-group/providers/Microsoft.Web/sites/blog"
     metrics:
       - name: "BytesReceived"
+        aggregations:
+          - "Total"
+          - "Average"
       - name: "BytesSent"
+        aggregations:
+          - "Total"
   - resource: "/resourceGroups/app-group/providers/Microsoft.Web/sites/app"
+    # resource-level aggregation: used as fallback for metrics without their own aggregations
+    aggregations:
+      - "Average"
     metrics:
       - name: "Http2xx"
       - name: "Http5xx"
+        aggregations:
+          - "Total"
+          - "Maximum"
   - resource: "/resourceGroups/vm-group/providers/Microsoft.Compute/virtualMachines/vm"
     metric_namespace: "Azure.VM.Windows.GuestMetrics"
     metrics:
     - name: 'Process\Thread Count'
+      aggregations:
+        - "Average"
+        - "Maximum"
 
 resource_groups:
   - resource_group: "webapps"
@@ -31,6 +42,8 @@ resource_groups:
       - "testvm12"
     metrics:
       - name: "CPU Credits Consumed"
+        aggregations:
+          - "Average"
 
 resource_tags:
   - resource_tag_name: "monitoring"
@@ -39,3 +52,6 @@ resource_tags:
       - "Microsoft.Compute/virtualMachines"
     metrics:
       - name: "CPU Credits consumed"
+        aggregations:
+          - "Average"
+          - "Maximum"

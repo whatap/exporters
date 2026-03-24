@@ -1,0 +1,40 @@
+---
+active_directory_authority_url: "https://login.microsoftonline.com/"
+resource_manager_url: "https://management.azure.com/"
+credentials:
+  subscription_id: <secret>
+  client_id: <secret>
+  client_secret: <secret>
+  tenant_id: <secret>
+
+targets:
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.Cache/redis/{resource_name}"
+    aggregations:
+      - Maximum
+    metrics:
+      - name: "allusedmemorypercentage"
+      - name: "allusedmemory"
+      - name: "allserverLoad"
+      - name: "allconnectedclients"
+      - name: "allConnectionsCreatedPerSecond"
+      - name: "allConnectionsClosedPerSecond"
+      - name: "usedmemorypercentage"
+      - name: "usedmemory"
+      - name: "serverLoad"
+      - name: "connectedclients"
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.Cache/redis/{resource_name}"
+    aggregations:
+      - Total
+    metrics:
+      - name: "allcachehits"
+      - name: "allcachemisses"
+      - name: "allevictedkeys"
+      - name: "allexpiredkeys"
+      - name: "allgetcommands"
+      - name: "allsetcommands"
+      - name: "cachehits"
+      - name: "cachemisses"
+      - name: "evictedkeys"
+      - name: "expiredkeys"
+      - name: "getcommands"
+      - name: "setcommands"

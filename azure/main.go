@@ -23,7 +23,7 @@ var (
 		C: &config.Config{},
 	}
 	ac                    = NewAzureClient()
-	configFile            = kingpin.Flag("config.file", "Azure exporter configuration file.").Default("azure.yml").String()
+	configFile            = kingpin.Flag("config.file", "Azure exporter configuration file.").Default("azure_event_hubs.yml").String()
 	listenAddress         = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests.").Default(":9276").String()
 	listMetricDefinitions = kingpin.Flag("list.definitions", "List available metric definitions for the given resources and exit.").Bool()
 	listMetricNamespaces  = kingpin.Flag("list.namespaces", "List available metric namespaces for the given resources and exit.").Bool()
@@ -223,27 +223,19 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	var incompleteResources []resourceMeta
 
 	for _, target := range sc.C.Targets {
-		var rm resourceMeta
-
-		metrics := []string{}
-		for _, metric := range target.Metrics {
-			metrics = append(metrics, metric.Name)
+		for _, group := range groupMetricsByAggregation(target.Metrics, target.Aggregations) {
+			var rm resourceMeta
+			rm.resourceID = target.Resource
+			rm.metricNamespace = target.MetricNamespace
+			rm.metrics = strings.Join(group.metricNames, ",")
+			rm.aggregations = group.aggregations
+			rm.resourceURL = resourceURLFrom(target.Resource, rm.metricNamespace, rm.metrics, rm.aggregations)
+			incompleteResources = append(incompleteResources, rm)
 		}
-
-		rm.resourceID = target.Resource
-		rm.metricNamespace = target.MetricNamespace
-		rm.metrics = strings.Join(metrics, ",")
-		rm.aggregations = filterAggregations(target.Aggregations)
-		rm.resourceURL = resourceURLFrom(target.Resource, rm.metricNamespace, rm.metrics, rm.aggregations)
-		incompleteResources = append(incompleteResources, rm)
 	}
 
 	for _, resourceGroup := range sc.C.ResourceGroups {
-		metrics := []string{}
-		for _, metric := range resourceGroup.Metrics {
-			metrics = append(metrics, metric.Name)
-		}
-		metricsStr := strings.Join(metrics, ",")
+		groups := groupMetricsByAggregation(resourceGroup.Metrics, resourceGroup.Aggregations)
 
 		filteredResources, err := ac.filteredListFromResourceGroup(resourceGroup)
 		if err != nil {
@@ -254,24 +246,22 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		for _, f := range filteredResources {
-			var rm resourceMeta
-			rm.resourceID = f.ID
-			rm.metricNamespace = resourceGroup.MetricNamespace
-			rm.metrics = metricsStr
-			rm.aggregations = filterAggregations(resourceGroup.Aggregations)
-			rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
-			rm.resource = f
-			resources = append(resources, rm)
+			for _, group := range groups {
+				var rm resourceMeta
+				rm.resourceID = f.ID
+				rm.metricNamespace = resourceGroup.MetricNamespace
+				rm.metrics = strings.Join(group.metricNames, ",")
+				rm.aggregations = group.aggregations
+				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
+				rm.resource = f
+				resources = append(resources, rm)
+			}
 		}
 	}
 
 	resourcesCache := make(map[string][]byte)
 	for _, resourceTag := range sc.C.ResourceTags {
-		metrics := []string{}
-		for _, metric := range resourceTag.Metrics {
-			metrics = append(metrics, metric.Name)
-		}
-		metricsStr := strings.Join(metrics, ",")
+		groups := groupMetricsByAggregation(resourceTag.Metrics, resourceTag.Aggregations)
 
 		filteredResources, err := ac.filteredListByTag(resourceTag, resourcesCache)
 		if err != nil {
@@ -282,13 +272,15 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		}
 
 		for _, f := range filteredResources {
-			var rm resourceMeta
-			rm.resourceID = f.ID
-			rm.metricNamespace = resourceTag.MetricNamespace
-			rm.metrics = metricsStr
-			rm.aggregations = filterAggregations(resourceTag.Aggregations)
-			rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
-			incompleteResources = append(incompleteResources, rm)
+			for _, group := range groups {
+				var rm resourceMeta
+				rm.resourceID = f.ID
+				rm.metricNamespace = resourceTag.MetricNamespace
+				rm.metrics = strings.Join(group.metricNames, ",")
+				rm.aggregations = group.aggregations
+				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
+				incompleteResources = append(incompleteResources, rm)
+			}
 		}
 	}
 

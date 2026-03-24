@@ -1,0 +1,42 @@
+---
+active_directory_authority_url: "https://login.microsoftonline.com/"
+resource_manager_url: "https://management.azure.com/"
+credentials:
+  subscription_id: <secret>
+  client_id: <secret>
+  client_secret: <secret>
+  tenant_id: <secret>
+
+targets:
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.DBforPostgreSQL/flexibleServers/{resource_name}"
+    aggregations:
+      - Average
+    metrics:
+      - name: "active_connections"
+      - name: "cpu_percent"
+      - name: "memory_percent"
+      - name: "iops"
+      - name: "storage_used"
+      - name: "storage_free"
+      - name: "storage_percent"
+      - name: "network_bytes_egress"
+      - name: "network_bytes_ingress"
+      - name: "write_iops"
+      - name: "read_iops"
+
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.DBforPostgreSQL/flexibleServers/{resource_name}"
+    aggregations:
+      - Total
+    metrics:
+      - name: "connections_succeeded"
+      - name: "connections_failed"
+      - name: "blks_hit"
+      - name: "blks_read"
+      - name: "deadlocks"
+
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.DBforPostgreSQL/flexibleServers/{resource_name}"
+    aggregations:
+      - Maximum
+    metrics:
+      - name: "is_db_alive"
+      - name: "tps"

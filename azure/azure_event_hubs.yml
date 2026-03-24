@@ -1,0 +1,40 @@
+---
+active_directory_authority_url: "https://login.microsoftonline.com/"
+resource_manager_url: "https://management.azure.com/"
+credentials:
+  subscription_id: <secret>
+  client_id: <secret>
+  client_secret: <secret>
+  tenant_id: <secret>
+
+targets:
+  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.EventHub/namespaces/{resource_name}"
+    metrics:
+      - name: "ActiveConnections"
+        aggregations:
+          - "Average"
+          - "Maximum"
+      - name: "IncomingMessages"
+        aggregations:
+          - "Total"
+      - name: "OutgoingMessages"
+        aggregations:
+          - "Total"
+      - name: "IncomingBytes"
+        aggregations:
+          - "Total"
+      - name: "OutgoingBytes"
+        aggregations:
+          - "Total"
+      - name: "UserErrors"
+        aggregations:
+          - "Total"
+      - name: "ThrottledRequests"
+        aggregations:
+          - "Total"
+      - name: "QuotaExceededErrors"
+        aggregations:
+          - "Total"
+      - name: "ServerErrors"
+        aggregations:
+          - "Total"

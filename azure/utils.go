@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/RobustPerception/azure_metrics_exporter/config"
 )
 
 var (
@@ -120,4 +122,42 @@ func filterAggregations(aggregations []string) []string {
 		return aggregations
 	}
 	return base
+}
+
+// metricGroup represents a group of metrics sharing the same aggregation set
+type metricGroup struct {
+	metricNames  []string
+	aggregations []string
+}
+
+// groupMetricsByAggregation groups metrics by their effective aggregation.
+// Metrics with per-metric aggregations are grouped together if they share the same set.
+// Metrics without per-metric aggregations use the resource-level fallback and are grouped together.
+func groupMetricsByAggregation(metrics []config.Metric, resourceAggregations []string) []metricGroup {
+	groups := make(map[string]*metricGroup)
+
+	for _, m := range metrics {
+		var aggr []string
+		if len(m.Aggregations) > 0 {
+			aggr = filterAggregations(m.Aggregations)
+		} else {
+			aggr = filterAggregations(resourceAggregations)
+		}
+
+		key := strings.Join(aggr, ",")
+		if g, ok := groups[key]; ok {
+			g.metricNames = append(g.metricNames, m.Name)
+		} else {
+			groups[key] = &metricGroup{
+				metricNames:  []string{m.Name},
+				aggregations: aggr,
+			}
+		}
+	}
+
+	result := make([]metricGroup, 0, len(groups))
+	for _, g := range groups {
+		result = append(result, *g)
+	}
+	return result
 }

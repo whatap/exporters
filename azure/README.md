@@ -4,10 +4,26 @@ Azure metrics exporter for [Prometheus.](https://prometheus.io)
 
 Allows for the exporting of metrics from Azure applications using the [Azure monitor API.](https://docs.microsoft.com/en-us/azure/monitoring-and-diagnostics/monitoring-rest-api-walkthrough)
 
-## Install
+## Build
+
+### Prerequisites
+
+- Go 1.18+
+
+### Build from source
 
 ```bash
-go get -u github.com/RobustPerception/azure_metrics_exporter
+# Linux amd64
+GOOS=linux GOARCH=amd64 go build -o azure_metrics_exporter_linux_amd64
+
+# Linux arm64
+GOOS=linux GOARCH=arm64 go build -o azure_metrics_exporter_linux_arm64
+
+# macOS amd64
+GOOS=darwin GOARCH=amd64 go build -o azure_metrics_exporter_darwin_amd64
+
+# macOS arm64 (Apple Silicon)
+GOOS=darwin GOARCH=arm64 go build -o azure_metrics_exporter_darwin_arm64
 ```
 
 ## Usage
@@ -51,7 +67,7 @@ If you want to scrape metrics from Azure national clouds (e.g. AzureChinaCloud, 
 If you won't provide `active_directory_authority_url` and `resource_manager_url` parameters, azure-metrics-exporter scrapes metrics from global cloud.
 You can find endpoints for national clouds [here](http://www.azurespeed.com/Information/AzureEnvironments)
 
-```
+```yaml
 active_directory_authority_url: "https://login.microsoftonline.com/"
 resource_manager_url: "https://management.azure.com/"
 credentials:
@@ -64,19 +80,29 @@ targets:
   - resource: "azure_resource_id"
     metrics:
     - name: "BytesReceived"
+      aggregations:
+        - "Total"
+        - "Average"
     - name: "BytesSent"
+      aggregations:
+        - "Total"
   - resource: "azure_resource_id"
+    # resource-level aggregation (fallback for metrics without their own aggregations)
     aggregations:
-    - Minimum
-    - Maximum
-    - Average
+      - "Average"
     metrics:
     - name: "Http2xx"
     - name: "Http5xx"
+      aggregations:
+        - "Total"
+        - "Maximum"
   - resource: "azure_resource_id"
     metric_namespace: "Azure.VM.Windows.GuestMetrics"
     metrics:
     - name: 'Process\Thread Count'
+      aggregations:
+        - "Average"
+        - "Maximum"
 
 resource_groups:
   - resource_group: "webapps"
@@ -88,6 +114,8 @@ resource_groups:
     - "testvm12"
     metrics:
     - name: "CPU Credits Consumed"
+      aggregations:
+        - "Average"
 
 resource_tags:
   - resource_tag_name: "group"
@@ -96,10 +124,26 @@ resource_tags:
       - "Microsoft.Compute/virtualMachines"
     metrics:
       - name: "CPU Credits Consumed"
-
+        aggregations:
+          - "Average"
+          - "Maximum"
 ```
 
-By default, all aggregations are returned (`Total`, `Maximum`, `Average`, `Minimum`). It can be overridden per resource.
+### Aggregation configuration
+
+Aggregations can be configured at two levels:
+
+| Level | Scope | Example |
+|---|---|---|
+| **Resource-level** | Applies to all metrics under that resource as a fallback | `targets[].aggregations` |
+| **Metric-level** | Applies to that specific metric (takes priority) | `targets[].metrics[].aggregations` |
+
+Resolution order:
+1. If the metric has its own `aggregations`, use it.
+2. Otherwise, fall back to the resource-level `aggregations`.
+3. If neither is specified, all aggregations are returned (`Total`, `Average`, `Minimum`, `Maximum`).
+
+Valid aggregation values: `Total`, `Average`, `Minimum`, `Maximum`
 
 The `metric_namespace` property is optional for all filtering types.
 When the metric namespace is specified, it will be added as a prefix of the metric name.
@@ -157,7 +201,7 @@ This will print your resource id's application/service name along with a list of
 ## Prometheus configuration
 
 ### Example config
-```
+```yaml
 global:
   scrape_interval:     60s # Set a high scrape_interval either globally or per-job to avoid hitting Azure Monitor API limits.
 

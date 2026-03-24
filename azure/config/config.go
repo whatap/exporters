@@ -63,6 +63,11 @@ func (c *Config) Validate() (err error) {
 		if err := c.validateAggregations(t.Aggregations); err != nil {
 			return err
 		}
+		for _, m := range t.Metrics {
+			if err := c.validateAggregations(m.Aggregations); err != nil {
+				return err
+			}
+		}
 
 		if len(t.Resource) == 0 {
 			return fmt.Errorf("name needs to be specified in each resource")
@@ -81,6 +86,11 @@ func (c *Config) Validate() (err error) {
 		if err := c.validateAggregations(t.Aggregations); err != nil {
 			return err
 		}
+		for _, m := range t.Metrics {
+			if err := c.validateAggregations(m.Aggregations); err != nil {
+				return err
+			}
+		}
 
 		if len(t.ResourceGroup) == 0 {
 			return fmt.Errorf("resource_group needs to be specified in each resource group")
@@ -98,6 +108,11 @@ func (c *Config) Validate() (err error) {
 	for _, t := range c.ResourceTags {
 		if err := c.validateAggregations(t.Aggregations); err != nil {
 			return err
+		}
+		for _, m := range t.Metrics {
+			if err := c.validateAggregations(m.Aggregations); err != nil {
+				return err
+			}
 		}
 
 		if len(t.ResourceTagName) == 0 {
@@ -178,9 +193,10 @@ type ResourceTag struct {
 	XXX map[string]interface{} `yaml:",inline"`
 }
 
-// Metric defines metric name
+// Metric defines metric name and optional per-metric aggregations
 type Metric struct {
-	Name string `yaml:"name"`
+	Name         string   `yaml:"name"`
+	Aggregations []string `yaml:"aggregations"`
 
 	XXX map[string]interface{} `yaml:",inline"`
 }
