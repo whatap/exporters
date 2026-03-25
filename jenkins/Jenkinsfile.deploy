@@ -1,0 +1,180 @@
+pipeline {
+    agent {
+        label 'master'
+    }
+
+    parameters {
+        choice(name: 'PROJECT', choices: ['azure', 'ncloud', 'all'], description: '배포할 프로젝트')
+        string(name: 'VERSION', defaultValue: '', description: '배포할 버전 (예: 1.0.1)')
+        string(name: 'BUILD_JOB_NUMBER', defaultValue: '', description: '빌드 Job 번호 (빈 값이면 Git에서 가져옴)')
+    }
+
+    environment {
+        GIT_CREDENTIALS_ID = 'Jenkins-Github'
+        S3_BUCKET = 'repo.whatap.io'
+        S3_BASE_PATH = 'exporter'
+    }
+
+    stages {
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.VERSION?.trim()) {
+                        error "VERSION 매개변수는 필수입니다."
+                    }
+                }
+            }
+        }
+
+        stage('Get Artifacts') {
+            steps {
+                script {
+                    if (params.BUILD_JOB_NUMBER?.trim()) {
+                        echo "빌드 Job #${params.BUILD_JOB_NUMBER}에서 아티팩트 가져오기..."
+                        copyArtifacts(
+                            projectName: 'exporter-build',
+                            selector: specific(params.BUILD_JOB_NUMBER),
+                            filter: '**/*',
+                            target: '.'
+                        )
+                    } else {
+                        echo "Git 태그 v${params.VERSION}에서 체크아웃..."
+                        withCredentials([string(
+                            credentialsId: env.GIT_CREDENTIALS_ID,
+                            variable: 'GIT_TOKEN'
+                        )]) {
+                            sh """
+                                git clone https://\${GIT_TOKEN}@github.com/your-org/exporters.git .
+                                git checkout v${params.VERSION}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Verify Artifacts') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    projects.each { proj ->
+                        def exporterName = getExporterName(proj)
+                        def archs = ['amd64', 'arm64']
+
+                        archs.each { arch ->
+                            def filePath = "${proj}/bin/${arch}/${exporterName}"
+                            if (!fileExists(filePath)) {
+                                error "아티팩트를 찾을 수 없습니다: ${filePath}"
+                            }
+                            echo "확인됨: ${filePath}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    projects.each { proj ->
+                        uploadToS3(proj, params.VERSION)
+                    }
+                }
+            }
+        }
+
+        stage('Verify S3 Upload') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    projects.each { proj ->
+                        def exporterName = getExporterName(proj)
+
+                        echo "=== ${exporterName} S3 업로드 검증 ==="
+
+                        sh """
+                            echo "버전 경로:"
+                            aws s3 ls s3://${S3_BUCKET}/${S3_BASE_PATH}/${exporterName}/${params.VERSION}/ --recursive
+
+                            echo "Latest 경로:"
+                            aws s3 ls s3://${S3_BUCKET}/${S3_BASE_PATH}/${exporterName}/latest/ --recursive
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                def projects = getProjects()
+                def exporterNames = projects.collect { getExporterName(it) }
+
+                echo """
+========================================
+배포 완료: ${params.PROJECT} v${params.VERSION}
+========================================
+
+S3 업로드 경로:
+${exporterNames.collect { name ->
+    "- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/${params.VERSION}/\n- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/latest/"
+}.join('\n')}
+========================================
+"""
+            }
+        }
+        failure {
+            echo "배포 실패: ${params.PROJECT} v${params.VERSION}"
+        }
+        cleanup {
+            cleanWs()
+        }
+    }
+}
+
+// Helper Functions
+def getProjects() {
+    return params.PROJECT == 'all' ? ['azure', 'ncloud'] : [params.PROJECT]
+}
+
+def getExporterName(String project) {
+    def mapping = [
+        'azure': 'azure_metrics_exporter',
+        'ncloud': 'ncloud_exporter'
+    ]
+    return mapping[project]
+}
+
+def uploadToS3(String project, String version) {
+    def exporterName = getExporterName(project)
+    def archs = ['amd64', 'arm64']
+
+    archs.each { arch ->
+        def sourceFile = "${project}/bin/${arch}/${exporterName}"
+
+        // 버전별 경로 업로드
+        def versionPath = "${S3_BASE_PATH}/${exporterName}/${version}/${arch}/${exporterName}"
+        echo "Uploading: ${sourceFile} -> s3://${S3_BUCKET}/${versionPath}"
+        sh """
+            aws s3 cp ${sourceFile} s3://${S3_BUCKET}/${versionPath} \
+                --content-type 'application/octet-stream' \
+                --metadata "version=${version},project=${project},arch=${arch}"
+        """
+
+        // latest 경로 업로드
+        def latestPath = "${S3_BASE_PATH}/${exporterName}/latest/${arch}/${exporterName}"
+        echo "Uploading: ${sourceFile} -> s3://${S3_BUCKET}/${latestPath}"
+        sh """
+            aws s3 cp ${sourceFile} s3://${S3_BUCKET}/${latestPath} \
+                --content-type 'application/octet-stream' \
+                --metadata "version=${version},project=${project},arch=${arch}"
+        """
+    }
+
+    echo "S3 업로드 완료: ${exporterName}"
+}
