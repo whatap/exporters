@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label 'go-builder'
+        label 'k8s-agent-node-x86'
     }
 
     parameters {
@@ -10,6 +10,7 @@ pipeline {
 
     environment {
         GIT_CREDENTIALS_ID = 'Jenkins-Github'
+        PATH = "/usr/local/go/bin:${env.PATH}"
     }
 
     stages {
