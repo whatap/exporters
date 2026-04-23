@@ -34,7 +34,7 @@ pipeline {
                     variable: 'GIT_TOKEN'
                 )]) {
                     sh '''
-                        git clone https://${GIT_TOKEN}@github.com/your-org/exporters.git .
+                        git clone https://${GIT_TOKEN}@github.com/whatap/exporters.git .
                         git checkout main
                     '''
                 }
@@ -99,7 +99,7 @@ release_date=${releaseDate}
                         sh 'git config user.name "Jenkins CI"'
 
                         sh '''
-                            git remote set-url origin https://${GIT_TOKEN}@github.com/your-org/exporters.git
+                            git remote set-url origin https://${GIT_TOKEN}@github.com/whatap/exporters.git
                         '''
 
                         projects.each { proj ->
