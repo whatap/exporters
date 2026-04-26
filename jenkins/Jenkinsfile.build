@@ -29,12 +29,9 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                withCredentials([string(
-                    credentialsId: env.GIT_CREDENTIALS_ID,
-                    variable: 'GIT_TOKEN'
-                )]) {
+                sshagent([env.GIT_CREDENTIALS_ID]) {
                     sh '''
-                        git clone https://${GIT_TOKEN}@github.com/whatap/exporters.git .
+                        git clone git@github.com:whatap/exporters.git .
                         git checkout main
                     '''
                 }
@@ -91,16 +88,9 @@ release_date=${releaseDate}
                 script {
                     def projects = getProjects()
 
-                    withCredentials([string(
-                        credentialsId: env.GIT_CREDENTIALS_ID,
-                        variable: 'GIT_TOKEN'
-                    )]) {
+                    sshagent([env.GIT_CREDENTIALS_ID]) {
                         sh 'git config user.email "jenkins@example.com"'
                         sh 'git config user.name "Jenkins CI"'
-
-                        sh '''
-                            git remote set-url origin https://${GIT_TOKEN}@github.com/whatap/exporters.git
-                        '''
 
                         projects.each { proj ->
                             sh "git add ${proj}/build.txt"

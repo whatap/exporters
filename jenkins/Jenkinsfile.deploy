@@ -39,12 +39,9 @@ pipeline {
                         )
                     } else {
                         echo "Git 태그 v${params.VERSION}에서 체크아웃..."
-                        withCredentials([string(
-                            credentialsId: env.GIT_CREDENTIALS_ID,
-                            variable: 'GIT_TOKEN'
-                        )]) {
+                        sshagent([env.GIT_CREDENTIALS_ID]) {
                             sh """
-                                git clone https://\${GIT_TOKEN}@github.com/whatap/exporters.git .
+                                git clone git@github.com:whatap/exporters.git .
                                 git checkout v${params.VERSION}
                             """
                         }
