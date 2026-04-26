@@ -28,8 +28,11 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                checkout scm
-                sh "git checkout ${env.BRANCH_NAME}"
+                script {
+                    def scmVars = checkout scm
+                    env.GIT_BRANCH_NAME = scmVars.GIT_BRANCH.replaceAll('origin/', '')
+                    sh "git checkout ${env.GIT_BRANCH_NAME}"
+                }
             }
         }
 
