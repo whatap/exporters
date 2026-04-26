@@ -9,7 +9,6 @@ pipeline {
     }
 
     environment {
-        GIT_CREDENTIALS_ID = 'Jenkins-Github'
         PATH = "/usr/local/go/bin:${env.PATH}"
     }
 
@@ -29,12 +28,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                sshagent([env.GIT_CREDENTIALS_ID]) {
-                    sh '''
-                        git clone git@github.com:whatap/exporters.git .
-                        git checkout main
-                    '''
-                }
+                checkout scm
             }
         }
 
@@ -88,23 +82,21 @@ release_date=${releaseDate}
                 script {
                     def projects = getProjects()
 
-                    sshagent([env.GIT_CREDENTIALS_ID]) {
-                        sh 'git config user.email "jenkins@example.com"'
-                        sh 'git config user.name "Jenkins CI"'
+                    sh 'git config user.email "jenkins@example.com"'
+                    sh 'git config user.name "Jenkins CI"'
 
-                        projects.each { proj ->
-                            sh "git add ${proj}/build.txt"
-                            sh "git add ${proj}/bin/"
-                        }
-
-                        def projectStr = projects.join(', ')
-                        sh """
-                            git commit -m "chore: build ${projectStr} v${params.VERSION}" || echo "No changes to commit"
-                            git tag -a "v${params.VERSION}" -m "Release ${projectStr} v${params.VERSION}" || echo "Tag already exists"
-                            git push origin HEAD
-                            git push origin "v${params.VERSION}" || echo "Tag already pushed"
-                        """
+                    projects.each { proj ->
+                        sh "git add ${proj}/build.txt"
+                        sh "git add ${proj}/bin/"
                     }
+
+                    def projectStr = projects.join(', ')
+                    sh """
+                        git commit -m "chore: build ${projectStr} v${params.VERSION}" || echo "No changes to commit"
+                        git tag -a "v${params.VERSION}" -m "Release ${projectStr} v${params.VERSION}" || echo "Tag already exists"
+                        git push origin HEAD
+                        git push origin "v${params.VERSION}" || echo "Tag already pushed"
+                    """
                 }
             }
         }
