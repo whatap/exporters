@@ -31,7 +31,7 @@ pipeline {
                 script {
                     def scmVars = checkout scm
                     env.GIT_BRANCH_NAME = scmVars.GIT_BRANCH.replaceAll('origin/', '')
-                    sh "git checkout ${env.GIT_BRANCH_NAME}"
+                    sh "git checkout -b ${env.GIT_BRANCH_NAME}"
                 }
             }
         }
