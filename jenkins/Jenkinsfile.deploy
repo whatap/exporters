@@ -10,22 +10,11 @@ pipeline {
     }
 
     environment {
-        GIT_CREDENTIALS_ID = 'Jenkins-Github'
         S3_BUCKET = 'repo.whatap.io'
         S3_BASE_PATH = 'exporter'
     }
 
     stages {
-        stage('Validate Parameters') {
-            steps {
-                script {
-                    if (!params.VERSION?.trim()) {
-                        error "VERSION 매개변수는 필수입니다."
-                    }
-                }
-            }
-        }
-
         stage('Get Artifacts') {
             steps {
                 script {
@@ -38,14 +27,23 @@ pipeline {
                             target: '.'
                         )
                     } else {
-                        echo "Git 태그 v${params.VERSION}에서 체크아웃..."
-                        sshagent([env.GIT_CREDENTIALS_ID]) {
-                            sh """
-                                git clone git@github.com:whatap/exporters.git .
-                                git checkout v${params.VERSION}
-                            """
-                        }
+                        checkout scm
                     }
+                }
+            }
+        }
+
+        stage('Resolve Version') {
+            steps {
+                script {
+                    if (env.DEPLOY_VERSION?.trim()) {
+                        env.DEPLOY_VERSION = env.DEPLOY_VERSION
+                    } else {
+                        def proj = getProjects().first()
+                        def versionLine = readFile("${proj}/build.txt").readLines().find { it.startsWith('version=') }
+                        env.DEPLOY_VERSION = versionLine.split('=')[1].trim()
+                    }
+                    echo "배포 버전: ${env.DEPLOY_VERSION}"
                 }
             }
         }
@@ -77,7 +75,7 @@ pipeline {
                     def projects = getProjects()
 
                     projects.each { proj ->
-                        uploadToS3(proj, params.VERSION)
+                        uploadToS3(proj, env.DEPLOY_VERSION)
                     }
                 }
             }
@@ -95,7 +93,7 @@ pipeline {
 
                         sh """
                             echo "버전 경로:"
-                            aws s3 ls s3://${S3_BUCKET}/${S3_BASE_PATH}/${exporterName}/${params.VERSION}/ --recursive
+                            aws s3 ls s3://${S3_BUCKET}/${S3_BASE_PATH}/${exporterName}/${env.DEPLOY_VERSION}/ --recursive
 
                             echo "Latest 경로:"
                             aws s3 ls s3://${S3_BUCKET}/${S3_BASE_PATH}/${exporterName}/latest/ --recursive
@@ -114,19 +112,19 @@ pipeline {
 
                 echo """
 ========================================
-배포 완료: ${params.PROJECT} v${params.VERSION}
+배포 완료: ${params.PROJECT} v${env.DEPLOY_VERSION}
 ========================================
 
 S3 업로드 경로:
 ${exporterNames.collect { name ->
-    "- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/${params.VERSION}/\n- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/latest/"
+    "- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/${env.DEPLOY_VERSION}/\n- s3://${S3_BUCKET}/${S3_BASE_PATH}/${name}/latest/"
 }.join('\n')}
 ========================================
 """
             }
         }
         failure {
-            echo "배포 실패: ${params.PROJECT} v${params.VERSION}"
+            echo "배포 실패: ${params.PROJECT} v${env.DEPLOY_VERSION}"
         }
         cleanup {
             cleanWs()
