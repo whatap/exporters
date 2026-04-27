@@ -1,0 +1,141 @@
+pipeline {
+    agent {
+        label 'k8s-agent-node-x86'
+    }
+
+    parameters {
+        choice(name: 'PROJECT', choices: ['azure', 'ncloud', 'all'], description: '빌드할 프로젝트')
+        string(name: 'VERSION', defaultValue: '', description: '버전 (예: 1.0.1)')
+    }
+
+    environment {
+        PATH = "/usr/local/go/bin:${env.PATH}"
+    }
+
+    stages {
+        stage('Validate Parameters') {
+            steps {
+                script {
+                    if (!params.VERSION?.trim()) {
+                        error "VERSION 매개변수는 필수입니다."
+                    }
+                    if (!params.VERSION.matches(/^\d+\.\d+\.\d+$/)) {
+                        error "VERSION은 SemVer 형식이어야 합니다 (예: 1.0.0)"
+                    }
+                }
+            }
+        }
+
+        stage('Checkout') {
+            steps {
+                script {
+                    def scmVars = checkout scm
+                    env.GIT_BRANCH_NAME = scmVars.GIT_BRANCH.replaceAll('origin/', '')
+                    sh "git checkout -b ${env.GIT_BRANCH_NAME}"
+                }
+            }
+        }
+
+        stage('Update build.txt') {
+            steps {
+                script {
+                    def projects = getProjects()
+                    def releaseDate = new Date().format('yyyy-MM-dd')
+
+                    projects.each { proj ->
+                        echo "Updating build.txt for ${proj}..."
+                        writeFile file: "${proj}/build.txt", text: """\
+version=${params.VERSION}
+release_date=${releaseDate}
+"""
+                    }
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    projects.each { proj ->
+                        echo "Building ${proj}..."
+                        dir(proj) {
+                            sh "chmod +x build.sh && ./build.sh"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Archive Artifacts') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    projects.each { proj ->
+                        archiveArtifacts artifacts: "${proj}/bin/**/*", fingerprint: true
+                        archiveArtifacts artifacts: "${proj}/build.txt", fingerprint: true
+                    }
+                }
+            }
+        }
+
+        stage('Push to GitHub') {
+            steps {
+                script {
+                    def projects = getProjects()
+
+                    sh 'git config user.email "jenkins@example.com"'
+                    sh 'git config user.name "Jenkins CI"'
+
+                    projects.each { proj ->
+                        sh "git add ${proj}/build.txt"
+                        sh "git add ${proj}/bin/"
+                    }
+
+                    def projectStr = projects.join(', ')
+                    sh """
+                        git commit -m "chore: build ${projectStr} v${params.VERSION}" || echo "No changes to commit"
+                        git tag -a "v${params.VERSION}" -m "Release ${projectStr} v${params.VERSION}" || echo "Tag already exists"
+                        git push origin HEAD
+                        git push origin "v${params.VERSION}" || echo "Tag already pushed"
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "빌드 완료: ${params.PROJECT} v${params.VERSION}"
+            echo "빌드 번호: ${env.BUILD_NUMBER}"
+
+            // 배포 파이프라인 자동 트리거 (필요시 주석 해제)
+            // build job: 'exporter-deploy', parameters: [
+            //     string(name: 'PROJECT', value: params.PROJECT),
+            //     string(name: 'VERSION', value: params.VERSION),
+            //     string(name: 'BUILD_JOB_NUMBER', value: env.BUILD_NUMBER)
+            // ], wait: false
+        }
+        failure {
+            echo "빌드 실패: ${params.PROJECT} v${params.VERSION}"
+        }
+        cleanup {
+            cleanWs()
+        }
+    }
+}
+
+// Helper Functions
+def getProjects() {
+    return params.PROJECT == 'all' ? ['azure', 'ncloud'] : [params.PROJECT]
+}
+
+def getExporterName(String project) {
+    def mapping = [
+        'azure': 'azure_metrics_exporter',
+        'ncloud': 'ncloud_exporter'
+    ]
+    return mapping[project]
+}
