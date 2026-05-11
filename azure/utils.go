@@ -157,7 +157,16 @@ func groupMetricsByAggregation(metrics []config.Metric, resourceAggregations []s
 
 	result := make([]metricGroup, 0, len(groups))
 	for _, g := range groups {
-		result = append(result, *g)
+		for i := 0; i < len(g.metricNames); i += batchSize {
+			j := i + batchSize
+			if j > len(g.metricNames) {
+				j = len(g.metricNames)
+			}
+			result = append(result, metricGroup{
+				metricNames:  g.metricNames[i:j],
+				aggregations: g.aggregations,
+			})
+		}
 	}
 	return result
 }

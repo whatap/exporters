@@ -22,19 +22,27 @@ targets:
       - name: "usedmemory"
       - name: "serverLoad"
       - name: "connectedclients"
-  - resource: "/resourceGroups/{resource_group}/providers/Microsoft.Cache/redis/{resource_name}"
-    aggregations:
-      - Total
-    metrics:
       - name: "allcachehits"
+        aggregations: [Total]
       - name: "allcachemisses"
+        aggregations: [Total]
       - name: "allevictedkeys"
+        aggregations: [Total]
       - name: "allexpiredkeys"
+        aggregations: [Total]
       - name: "allgetcommands"
+        aggregations: [Total]
       - name: "allsetcommands"
+        aggregations: [Total]
       - name: "cachehits"
+        aggregations: [Total]
       - name: "cachemisses"
+        aggregations: [Total]
       - name: "evictedkeys"
+        aggregations: [Total]
       - name: "expiredkeys"
+        aggregations: [Total]
       - name: "getcommands"
+        aggregations: [Total]
       - name: "setcommands"
+        aggregations: [Total]
