@@ -17,7 +17,9 @@ import (
 )
 
 func main() {
-	configPath := flag.String("config", "ncloud.yaml", "Path to config file")
+	configPath := flag.String("config", "config.yml", "Path to config file")
+	listenAddress := flag.String("web.listen-address", ":9850", "Address to listen on for web interface and telemetry")
+	metricsPath := flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
 	logLevel := flag.String("log.level", "info", "Log level: debug, info, warn, error")
 	logFormat := flag.String("log.format", "text", "Log format: text, json")
 	flag.Parse()
@@ -70,19 +72,19 @@ func main() {
 		}
 	}()
 
-	http.Handle(cfg.Exporter.MetricsPath, promhttp.Handler())
+	http.Handle(*metricsPath, promhttp.Handler())
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
 <head><title>NCloud Exporter</title></head>
 <body>
 <h1>NCloud Prometheus Exporter</h1>
-<p><a href="` + cfg.Exporter.MetricsPath + `">Metrics</a></p>
+<p><a href="` + *metricsPath + `">Metrics</a></p>
 </body>
 </html>`))
 	})
 
-	slog.Info("starting ncloud", "address", cfg.Exporter.ListenAddress)
-	if err := http.ListenAndServe(cfg.Exporter.ListenAddress, nil); err != nil {
+	slog.Info("starting ncloud", "address", *listenAddress, "path", *metricsPath)
+	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
 		slog.Error("http server error", "error", err)
 		os.Exit(1)
 	}
