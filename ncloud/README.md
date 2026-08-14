@@ -4,6 +4,7 @@ NCloud(네이버 클라우드 플랫폼) Cloud Insight 메트릭을 Prometheus �
 
 - [설치 가이드](docs/install.md) — 설치·실행·OpenAgent 연동
 - [수집 메트릭 지정 가이드](docs/metrics.md) — 서비스별 메트릭 목록 및 선택 방법
+- [NCP API 구조와 디버깅](docs/api.md) — 게이트웨이 구성과 `ncp-api.sh` 사용법
 
 ## 지원 서비스
 

@@ -17,7 +17,7 @@
 
 ### 1. Cloud Insight API (권장)
 
-가장 정확한 소스입니다. 메트릭명, 설명, 단위, **interval별 사용 가능한 aggregation**까지 전부 나옵니다. exporter가 기동 시 호출하는 API와 동일합니다.
+가장 정확한 소스입니다. 메트릭명, 설명, 단위, **interval별 사용 가능한 aggregation**까지 전부 나옵니다. exporter가 기동 시 호출하는 API와 동일합니다. 게이트웨이가 두 개인 이유와 각 API의 역할은 [NCP API 구조와 디버깅](api.md)을 참고하세요.
 
 `scripts/ncp-api.sh`로 조회할 수 있습니다.
 
@@ -246,6 +246,11 @@ namespaces:
 ```bash
 kill -HUP $(pgrep -f ncloud_exporter)
 ```
+
+## 참고
+
+- [NCP API 구조와 디버깅](api.md) — 게이트웨이 구성, 호출 API 목록, `ncp-api.sh` 사용법
+- [설치 가이드](install.md) — 설치·실행·OpenAgent 연동
 
 ## 다른 서비스
 

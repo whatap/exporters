@@ -435,7 +435,7 @@ namespaces:
 
 - NCP signature v2(HMAC-SHA256)를 직접 생성해 API 호출 가능
 - 메트릭 정의·응답 형태 확인 시 유용
-- 아직 Git 미커밋(untracked) 상태
+- 게이트웨이 구성(`vpc` / `cw`)과 호출 API 목록, 오류별 확인 절차는 `ncloud/docs/api.md` 참고
 
 ```bash
 export NCLOUD_ACCESS_KEY=... NCLOUD_SECRET_KEY=...
@@ -463,7 +463,7 @@ DEBUG=1 ./ncp-api.sh ...   # 서명 메시지 덤프
 | 항목 | 현황 |
 |---|---|
 | `ncloud/ncloud_exporter` | **macOS(arm64) 바이너리가 Git에 커밋되어 있음** (13MB). 배포 대상은 linux뿐이므로 삭제 대상 |
-| `ncloud/scripts/` | `ncp-api.sh`(디버깅 도구), `test2.txt`(VPC Server 메트릭 정의 응답 덤프) 모두 **untracked**. 문서가 참조하는 도구이므로 커밋 권장 |
+| `ncloud/scripts/` | `proto` 브랜치에 커밋 완료 (`ncp-api.sh`, `test2.txt`) |
 | `vcp.txt` (저장소 루트) | `/metrics` 응답 덤프. 커밋 대상 아님 |
 | `ncloud/.idea/` | IDE 설정 일부가 커밋되어 있음 (`.gitignore`에 `.idea/` 등록 이전 파일) |
 

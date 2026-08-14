@@ -410,4 +410,5 @@ pkill openagent
 ## 참고
 
 - [수집 메트릭 지정 가이드](metrics.md) — 서비스별 메트릭 목록 확인 및 선택 방법
+- [NCP API 구조와 디버깅](api.md) — 게이트웨이 구성, 호출 API 목록, 인증 문제 확인 방법
 - [README](../README.md) — 설정 항목 전체와 아키텍처
