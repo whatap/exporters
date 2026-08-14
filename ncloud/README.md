@@ -1,6 +1,9 @@
 # NCloud Exporter
 
-NCloud(네이버 클라우드 플랫폼) Cloud Insight 메트릭을 Prometheus 포맷으로 노출하는 Exporter입니다.
+NCloud(네이버 클라우드 플랫폼) Cloud Insight 메트릭을 Prometheus 포맷으로 노출하는 Exporter.
+
+- [설치 가이드](docs/install.md) — 설치·실행·OpenAgent 연동
+- [수집 메트릭 지정 가이드](docs/metrics.md) — 서비스별 메트릭 목록 및 선택 방법
 
 ## 지원 서비스
 
@@ -26,7 +29,7 @@ NCloud(네이버 클라우드 플랫폼) Cloud Insight 메트릭을 Prometheus �
 cp config.example.yml config.yml
 ```
 
-`config.yml`을 편집하여 NCloud API 키와 모니터링할 서비스를 설정합니다.
+`config.yml`을 편집해 NCloud API 키와 모니터링할 서비스를 지정.
 
 ```yaml
 ncloud:
@@ -53,7 +56,7 @@ go build -o ncloud .
 ./ncloud
 ```
 
-기본적으로 현재 디렉토리의 `config.yml`을 읽습니다. 다른 설정 파일을 사용하려면:
+기본적으로 현재 디렉토리의 `config.yml`을 읽음. 다른 설정 파일을 쓰려면:
 
 ```bash
 ./ncloud --config=config-test.yml
@@ -102,7 +105,9 @@ go build -o ncloud .
 
 ### 메트릭 선택
 
-`metrics`를 지정하면 **지정한 메트릭만** 수집합니다. CloudWatch Exporter의 `metrics:` 블록과 동일한 개념입니다.
+`metrics`를 지정하면 **지정한 메트릭만** 수집. CloudWatch Exporter의 `metrics:` 블록과 동일한 개념.
+
+> 서비스별 메트릭 목록 확인 방법과 VPC Server 전체 메트릭표는 [docs/metrics.md](docs/metrics.md) 참고.
 
 ```yaml
 namespaces:
@@ -120,15 +125,15 @@ namespaces:
 
 동작 규칙:
 
-- `metrics`를 **생략하면** 해당 네임스페이스의 모든 메트릭 × 모든 aggregation을 수집합니다 (기존 동작).
-- aggregation 우선순위: `metrics[].aggregations` → `namespaces[].aggregations` → Cloud Insight가 해당 interval에 제공하는 전체.
-- 사용 가능한 aggregation은 메트릭·interval마다 다릅니다. 지원하지 않는 값을 지정하면 그 값만 제외하고 `WARN` 로그를 남깁니다.
-- 설정한 `name`이 어떤 메트릭과도 매칭되지 않으면 `WARN` 로그로 알려줍니다 (오타 탐지).
-- 잘못된 `interval` / `aggregation` 값은 기동 시점에 에러로 거부됩니다.
+- `metrics` **생략 시** 해당 네임스페이스의 모든 메트릭 × 모든 aggregation 수집 (기존 동작)
+- aggregation 우선순위: `metrics[].aggregations` → `namespaces[].aggregations` → Cloud Insight가 해당 interval에 제공하는 전체
+- 사용 가능한 aggregation은 메트릭·interval마다 상이. 미지원 값 지정 시 해당 값만 제외하고 `WARN` 로그 출력
+- 설정한 `name`이 어떤 메트릭과도 매칭되지 않으면 `WARN` 로그로 알림 (오타 탐지)
+- 잘못된 `interval` / `aggregation` 값은 기동 시점에 에러로 거부
 
-> **수집량 주의:** 시리즈 수는 `메트릭 수 × aggregation 수 × 인스턴스 수`이고, Cloud Insight 배치 쿼리는 요청당 20개 제한이므로 API 호출 수도 같이 늘어납니다. vserver의 경우 필터 없이 수집하면 인스턴스당 125 시리즈(25개 메트릭 × 5 aggregation)가 생성됩니다. 필요한 메트릭만 지정하는 것을 권장합니다.
+> **수집량 주의:** 시리즈 수 = `메트릭 수 × aggregation 수 × 인스턴스 수`. Cloud Insight 배치 쿼리가 요청당 20개 제한이라 API 호출 수도 함께 증가. vserver는 필터 없이 수집 시 인스턴스당 125 시리즈(25개 메트릭 × 5 aggregation) 생성 → 필요한 메트릭만 지정 권장.
 >
-> 사용 가능한 메트릭명은 필터 없이 한 번 기동해 `/metrics`를 확인하면 알 수 있습니다. 노출되는 이름은 `ncloud_{service}_{metric}_{aggregation}` 형태이므로, 접두사와 aggregation 접미사를 뗀 가운데 부분이 `metrics[].name`에 넣을 값입니다.
+> 사용 가능한 메트릭명은 필터 없이 한 번 기동해 `/metrics`로 확인 가능. 노출 이름이 `ncloud_{service}_{metric}_{aggregation}` 형태이므로, 접두사와 aggregation 접미사를 뗀 가운데 부분이 `metrics[].name`에 넣을 값.
 
 ### 환경변수
 
@@ -159,7 +164,7 @@ ncloud_scrape_duration_seconds 1.234
 
 ## 아키텍처
 
-NCloud Cloud Insight API의 모니터링 데이터를 Prometheus가 읽을 수 있는 포맷으로 변환하는 브릿지 역할을 합니다. 메트릭을 자체 생성하지 않으며, Cloud Insight 응답값을 그대로 전달합니다.
+NCloud Cloud Insight API의 모니터링 데이터를 Prometheus가 읽을 수 있는 포맷으로 변환하는 브릿지. 메트릭을 자체 생성하지 않고 Cloud Insight 응답값을 그대로 전달.
 
 ```
 Prometheus  ──(scrape)──>  ncloud_exporter(:9850/metrics)
@@ -183,14 +188,14 @@ Prometheus  ──(scrape)──>  ncloud_exporter(:9850/metrics)
 5. **데이터 쿼리** — `QueryDataMulti`로 최근 10분 윈도우의 데이터를 배치 조회
 6. **최신 값 추출** — 응답의 datapoints 중 가장 최근 값 1개만 Prometheus 메트릭으로 변환
 
-> **참고:** scrape 간격은 5분이지만 query window가 10분인 이유는 Cloud Insight 데이터에 수집 지연이 있을 수 있어 빈 응답을 방지하기 위한 안전 마진입니다. 항상 최신 datapoint 1개만 사용하므로 데이터 중복은 발생하지 않습니다.
+> **참고:** query window(10분)가 scrape 간격(5분)보다 긴 것은 Cloud Insight 수집 지연으로 인한 빈 응답을 막기 위한 안전 마진. 항상 최신 datapoint 1개만 사용하므로 데이터 중복 없음.
 
 ### 설정 리로드
 
-실행 중 `SIGHUP` 시그널을 보내면 설정 파일을 다시 읽어 반영합니다:
+실행 중 `SIGHUP` 시그널 전달 시 설정 파일을 다시 읽어 반영:
 
 ```bash
 kill -HUP $(pidof ncloud)
 ```
 
-API 키, namespace, 메트릭 선택은 리로드로 반영됩니다. 리스닝 주소와 경로는 실행 인자이므로 재시작이 필요합니다.
+API 키, namespace, 메트릭 선택은 리로드로 반영. 리스닝 주소와 경로는 실행 인자이므로 재시작 필요.
