@@ -1,0 +1,1326 @@
+{
+  "metrics": [
+    {
+      "dataType": "FLOAT",
+      "desc": "CPU Utilization Average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_cpu_used_rto",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "File System Utilization Average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_fs_usert",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "Network In Average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_rcv_bps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bits/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network receive packets/sec average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_rcv_pps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "packets/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "disk read bytes average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_read_byt_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bytes/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "disk read count per second average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_read_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "num/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "Network Out Average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_snd_bps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bits/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network send packets/sec average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_snd_pps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "packets/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "disk write bytes average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_write_byt_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bytes/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "disk write count per second average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "avg_write_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "num/sec"
+    },
+    {
+      "dataType": "STRING",
+      "desc": "device name",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "fs"
+        },
+        {
+          "dim": "mnt_nm",
+          "val": "/"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "dev_nm",
+      "options": {
+        "Min1": [
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": ""
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "CPU load 15 minute average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "load_average_15m",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "CPU load 1 minute",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "load_average_1m",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "CPU load 5 minute average",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "load_average_5m",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "CPU used ratio maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_cpu_used_rto",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "file system used ratio maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_fs_usert",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network receive bits/sec maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_rcv_bps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bits/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network receive packets/sec maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_rcv_pps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "packets/sec"
+    },
+    {
+      "dataType": "INTEGER",
+      "desc": "disk read bytes maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_read_byt_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bytes/sec"
+    },
+    {
+      "dataType": "INTEGER",
+      "desc": "disk read count per second maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_read_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "num/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network send bits/sec maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_snd_bps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bits/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "network send packets/sec maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_snd_pps",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "packets/sec"
+    },
+    {
+      "dataType": "INTEGER",
+      "desc": "disk write bytes maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_write_byt_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "bytes/sec"
+    },
+    {
+      "dataType": "INTEGER",
+      "desc": "disk write count per second maximum",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "svr"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "max_write_cnt",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "num/sec"
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "Memory Utilization",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "memory"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "mem_usert",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    },
+    {
+      "dataType": "INTEGER",
+      "desc": "mount state",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "fs"
+        },
+        {
+          "dim": "mnt_nm",
+          "val": "/"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "mnt_stat_cd",
+      "options": {
+        "Min1": [
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": ""
+    },
+    {
+      "dataType": "FLOAT",
+      "desc": "swap used ratio",
+      "dimensions": [
+        {
+          "dim": "type",
+          "val": "memory"
+        }
+      ],
+      "idDimension": "instanceNo",
+      "metric": "swap_usert",
+      "options": {
+        "Min1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min5": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Min30": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Hour2": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ],
+        "Day1": [
+          "COUNT",
+          "SUM",
+          "MAX",
+          "MIN",
+          "AVG"
+        ]
+      },
+      "prodKey": "460438474722512896",
+      "unit": "%"
+    }
+  ],
+  "prodKey": "460438474722512896"
+}
