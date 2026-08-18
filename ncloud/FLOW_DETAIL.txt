@@ -34,8 +34,8 @@ ncloud_exporter/
 ├── collector/
 │   ├── collector.go         # Prometheus Collector 구현 (수집 오케스트레이션)
 │   └── metrics.go           # 메트릭명 정규화, 데이터포인트 추출 유틸리티
-├── ncloud.yaml       # 설정 파일 (API 키, 네임스페이스, exporter 설정)
-├── config.example.yaml      # 설정 파일 예시
+├── config.yml               # 설정 파일 (API 키, 네임스페이스, 메트릭 선택)
+├── config.example.yml       # 설정 파일 예시
 ├── Dockerfile               # Docker 빌드 (멀티스테이지)
 ├── go.mod / go.sum          # Go 모듈 의존성
 └── ncloud_exporter          # 빌드된 바이너리
@@ -46,7 +46,7 @@ ncloud_exporter/
 
 [STEP 1] 프로그램 시작 (main.go)
   │
-  ├─ flag로 --config 파라미터 파싱 (기본값: ncloud.yaml)
+  ├─ flag로 --config 파라미터 파싱 (기본값: config.yml)
   ├─ config.Load()로 YAML 설정 파일 로드
   │   ├─ 파일 읽기 (os.ReadFile)
   │   ├─ YAML 파싱 (yaml.Unmarshal)
@@ -180,30 +180,34 @@ ncloud_exporter/
     4. "ncloud_" + namespace + "_" + metric + "_" + aggregation
 
 
-8. 설정 파일 구조 (ncloud.yaml)
+8. 설정 파일 구조 (config.yml)
 --------------------------------------------------------------------------------
   ncloud:
     access_key: "..."        # NCloud API Access Key (또는 환경변수 NCLOUD_ACCESS_KEY)
     secret_key: "..."        # NCloud API Secret Key (또는 환경변수 NCLOUD_SECRET_KEY)
 
-  exporter:
-    listen_address: ":9850"  # HTTP 리스닝 주소
-    metrics_path: "/metrics" # Prometheus 메트릭 경로
-    scrape_interval: 300     # 스크래핑 간격 (초, Cloud Insight 최소 간격)
-
   namespaces:                # 모니터링할 NCloud 서비스 목록
     - name: "ncloud.vserver"
       enabled: true
       regions: ["KR"]        # 빈 배열이면 전체 리전 자동 조회
+      interval: "Min5"       # Min1 | Min5 | Min30 | Hour2 | Day1
+      aggregations: ["AVG"]  # 네임스페이스 기본 aggregation
+      metrics:               # 생략하면 전체 메트릭 수집
+        - name: "avg_cpu_used_rto"
+          aggregations: ["AVG", "MAX"]
+        - name: "load_average_*"   # '*' 와일드카드 지원
+
+  * 리스닝 주소/경로는 설정 파일이 아니라 실행 인자로 지정
+    --web.listen-address (기본 :9850), --web.telemetry-path (기본 /metrics)
 
 
 9. Docker 실행 흐름
 --------------------------------------------------------------------------------
   - 멀티스테이지 빌드 (golang:1.22-alpine → alpine:3.19)
   - 바이너리: /usr/local/bin/ncloud_exporter
-  - 설정 파일 마운트: /etc/ncloud_exporter/ncloud.yaml
+  - 설정 파일 마운트: /etc/ncloud_exporter/config.yml
   - 포트: 9850
-  - 실행: ncloud_exporter --config /etc/ncloud_exporter/ncloud.yaml
+  - 실행: ncloud_exporter --config=/etc/ncloud_exporter/config.yml
 
 
 10. 환경변수

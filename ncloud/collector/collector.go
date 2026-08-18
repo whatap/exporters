@@ -3,6 +3,7 @@ package collector
 import (
 	"log/slog"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,9 +13,8 @@ import (
 )
 
 const (
-	cacheTTL        = 5 * time.Minute
-	defaultInterval = "Min5"
-	queryWindow     = 10 * time.Minute
+	cacheTTL    = 5 * time.Minute
+	queryWindow = 10 * time.Minute
 )
 
 // NCloudCollector implements prometheus.Collector for NCloud Cloud Insight metrics.
@@ -133,13 +133,22 @@ func (c *NCloudCollector) collectNamespace(ch chan<- prometheus.Metric, ns confi
 	}
 
 	// Get metric definitions (with cache)
-	metricDefs, err := c.getMetricDefs(cwKey)
+	allMetricDefs, err := c.getMetricDefs(cwKey)
 	if err != nil {
 		slog.Error("failed to get metric defs", "namespace", ns.Name, "error", err)
 		return 1
 	}
 
-	if len(metricDefs) == 0 {
+	if len(allMetricDefs) == 0 {
+		return 0
+	}
+
+	interval := ns.ResolveInterval()
+
+	// Apply the metrics filter from config
+	selected := c.selectMetrics(ns, interval, allMetricDefs)
+	if len(selected) == 0 {
+		slog.Warn("no metrics selected", "namespace", ns.Name, "available", len(allMetricDefs))
 		return 0
 	}
 
@@ -227,29 +236,24 @@ func (c *NCloudCollector) collectNamespace(ch chan<- prometheus.Metric, ns confi
 		metas = nil
 	}
 
-	for _, metricDef := range metricDefs {
-		aggrs := metricDef.Options.GetAggregationsForInterval(defaultInterval)
-		if len(aggrs) == 0 {
-			aggrs = []string{"AVG"}
-		}
-
+	for _, sel := range selected {
 		for _, inst := range instances {
 			dimValue := inst.InstanceNo
 			if dimValue == "" {
 				continue
 			}
 
-			for _, aggr := range aggrs {
+			for _, aggr := range sel.aggregations {
 				mi := ncloud.MetricInfo{
 					Aggregation: aggr,
-					Dimensions:  map[string]string{metricDef.IDDimension: dimValue},
-					Interval:    defaultInterval,
-					MetricName:  metricDef.MetricName,
+					Dimensions:  map[string]string{sel.def.IDDimension: dimValue},
+					Interval:    interval,
+					MetricName:  sel.def.MetricName,
 					ProdKey:     cwKey,
 				}
 				batch = append(batch, mi)
 				metas = append(metas, batchMeta{
-					metricDef:   metricDef,
+					metricDef:   sel.def,
 					instance:    inst,
 					aggregation: aggr,
 				})
@@ -263,6 +267,88 @@ func (c *NCloudCollector) collectNamespace(ch chan<- prometheus.Metric, ns confi
 
 	flushBatch()
 	return errors
+}
+
+// selectedMetric pairs a Cloud Insight metric definition with the aggregations
+// that should actually be queried for it.
+type selectedMetric struct {
+	def          ncloud.Metric
+	aggregations []string
+}
+
+// selectMetrics applies the namespace's metrics filter to the metric definitions
+// discovered from the API, and resolves the aggregation list for each survivor.
+//
+// Resolution order for aggregations: metrics[].aggregations -> namespace
+// aggregations -> whatever the API reports as available for the interval.
+// Configured aggregations that the API does not support for the interval are
+// dropped with a warning, so a typo cannot silently produce empty series.
+func (c *NCloudCollector) selectMetrics(ns config.NamespaceConfig, interval string, defs []ncloud.Metric) []selectedMetric {
+	selected := make([]selectedMetric, 0, len(defs))
+	matchedEntries := make(map[int]bool, len(ns.Metrics))
+
+	for _, def := range defs {
+		wanted, entryIdx, ok := ns.SelectMetric(def.MetricName)
+		if !ok {
+			continue
+		}
+		if entryIdx >= 0 {
+			matchedEntries[entryIdx] = true
+		}
+
+		available := def.Options.GetAggregationsForInterval(interval)
+		if len(available) == 0 {
+			slog.Warn("metric has no aggregations for interval",
+				"namespace", ns.Name, "metric", def.MetricName, "interval", interval)
+			continue
+		}
+
+		aggrs := available
+		if len(wanted) > 0 {
+			aggrs = intersectAggregations(wanted, available)
+			if len(aggrs) == 0 {
+				slog.Warn("none of the configured aggregations are supported",
+					"namespace", ns.Name, "metric", def.MetricName,
+					"interval", interval, "configured", wanted, "available", available)
+				continue
+			}
+			if len(aggrs) != len(wanted) {
+				slog.Warn("some configured aggregations are not supported",
+					"namespace", ns.Name, "metric", def.MetricName,
+					"interval", interval, "using", aggrs, "available", available)
+			}
+		}
+
+		selected = append(selected, selectedMetric{def: def, aggregations: aggrs})
+	}
+
+	// Surface metric names in the config that matched nothing (typos, or a
+	// metric that does not exist for this product).
+	for i, m := range ns.Metrics {
+		if !matchedEntries[i] {
+			slog.Warn("configured metric matched no available metric",
+				"namespace", ns.Name, "metric", m.Name)
+		}
+	}
+
+	return selected
+}
+
+// intersectAggregations keeps the wanted aggregations that the API supports,
+// preserving the order given in the config. Comparison is case-insensitive.
+func intersectAggregations(wanted, available []string) []string {
+	supported := make(map[string]string, len(available))
+	for _, a := range available {
+		supported[strings.ToUpper(a)] = a
+	}
+
+	out := make([]string, 0, len(wanted))
+	for _, w := range wanted {
+		if actual, ok := supported[strings.ToUpper(w)]; ok {
+			out = append(out, actual)
+		}
+	}
+	return out
 }
 
 func (c *NCloudCollector) findCWKey(svc ncloud.ServiceDef) string {
