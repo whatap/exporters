@@ -16,13 +16,25 @@ import (
 	"github.com/whatap/ncloud_exporter/ncloud"
 )
 
+// Injected at build time via -ldflags. See build.sh.
+var (
+	version     = "dev"
+	releaseDate = "unknown"
+)
+
 func main() {
 	configPath := flag.String("config", "config.yml", "Path to config file")
 	listenAddress := flag.String("web.listen-address", ":9850", "Address to listen on for web interface and telemetry")
 	metricsPath := flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
 	logLevel := flag.String("log.level", "info", "Log level: debug, info, warn, error")
 	logFormat := flag.String("log.format", "text", "Log format: text, json")
+	showVersion := flag.Bool("version", false, "Print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Printf("ncloud_exporter version %s (released %s)\n", version, releaseDate)
+		os.Exit(0)
+	}
 
 	if err := setupLogger(*logLevel, *logFormat); err != nil {
 		fmt.Fprintf(os.Stderr, "invalid log config: %v\n", err)
@@ -83,7 +95,9 @@ func main() {
 </html>`))
 	})
 
-	slog.Info("starting ncloud", "address", *listenAddress, "path", *metricsPath)
+	slog.Info("starting ncloud_exporter",
+		"version", version, "releaseDate", releaseDate,
+		"address", *listenAddress, "path", *metricsPath)
 	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
 		slog.Error("http server error", "error", err)
 		os.Exit(1)

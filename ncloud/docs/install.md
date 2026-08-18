@@ -182,6 +182,14 @@ namespaces:
 | `--web.telemetry-path` | 메트릭 엔드포인트 경로 | `/metrics` |
 | `--log.level` | 로그 레벨 (`debug`, `info`, `warn`, `error`) | `info` |
 | `--log.format` | 로그 포맷 (`text`, `json`) | `text` |
+| `--version` | 버전 출력 후 종료 | - |
+
+설치된 바이너리의 버전은 아래로 확인합니다.
+
+```bash
+ncloud_exporter --version
+# ncloud_exporter version 1.0.0 (released 2026-08-19)
+```
 
 ### 방법 A: systemd 서비스 등록
 

@@ -32,7 +32,8 @@ exporters/
 │   ├── README.md, docs/metrics.md, FLOW_DETAIL.txt
 │   ├── scripts/ncp-api.sh                          # NCP API 수동 호출 디버깅 스크립트
 │   └── bin/{amd64,arm64}/ncloud_exporter
-│   ※ build.sh / build.txt / VERSION / Dockerfile 미존재 → 6장 참고
+│   ├── build.sh, build.txt                        # 빌드 스크립트 (Jenkins가 build.txt 갱신)
+│   ※ Dockerfile 미존재 → 6장 참고
 └── jenkins/
     ├── Jenkinsfile.build
     ├── Jenkinsfile.deploy
@@ -455,8 +456,8 @@ DEBUG=1 ./ncp-api.sh ...   # 서명 메시지 덤프
 | # | 항목 | 현황 | 영향 |
 |---|---|---|---|
 | 1 | **NCP 자격증명이 Git 이력에 노출** | `ncloud/ncloud.yaml`에 실 IAM 키가 커밋된 상태로 존재. `proto` 브랜치에서 추적 해제 + `.gitignore` 등록했으나 **과거 커밋에는 그대로 남아 있음** | 저장소 접근 권한자 전원이 키 열람 가능 → **키 재발급 필요**. 이력 제거는 히스토리 재작성이 필요해 별도 판단 |
-| 2 | **ncloud 빌드 파이프라인 미지원** | Jenkins Build Job의 `PROJECT` 선택지에 `ncloud`가 있으나, 파이프라인이 실행하는 `ncloud/build.sh`가 **존재하지 않음**. `build.txt` / `VERSION`도 없음 | `PROJECT=ncloud` 또는 `all` 실행 시 Build 단계 실패. `azure/build.sh`를 참고해 작성 필요 |
-| 3 | **ncloud 버전 정보 미주입** | `main.version` / `main.releaseDate` 변수와 `--version` 플래그 없음 (azure 개선 #4는 ncloud에 미적용) | 배포된 바이너리의 버전 확인 불가. 2번과 함께 처리 |
+| 2 | ~~ncloud 빌드 파이프라인 미지원~~ | **해결됨** (2026-08-19) — `ncloud/build.sh`, `build.txt` 추가 | `azure/build.sh`와 동일 구조. linux amd64/arm64 크로스 컴파일 |
+| 3 | ~~ncloud 버전 정보 미주입~~ | **해결됨** (2026-08-19) — `-ldflags`로 `main.version` / `main.releaseDate` 주입, `--version` 플래그 추가 | 미주입 시 `dev` / `unknown` |
 
 ### 6-2. 저장소 정리
 

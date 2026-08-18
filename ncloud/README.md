@@ -22,6 +22,14 @@ NCloud(네이버 클라우드 플랫폼) Cloud Insight 메트릭을 Prometheus �
 | `ncloud.vsearchengine` | Search Engine Service |
 | `ncloud.vhadoop` | Cloud Hadoop |
 
+## 빌드
+
+```bash
+./build.sh          # build.txt의 version/release_date를 주입해 linux amd64/arm64 빌드
+```
+
+산출물은 `bin/{amd64,arm64}/ncloud_exporter`. 버전은 `-ldflags`로 주입되며 `--version`으로 확인 가능.
+
 ## 빠른 시작
 
 ### 1. 설정 파일 작성
@@ -72,6 +80,7 @@ go build -o ncloud .
 | `--web.telemetry-path` | 메트릭 엔드포인트 경로 | `/metrics` |
 | `--log.level` | 로그 레벨 (`debug`, `info`, `warn`, `error`) | `info` |
 | `--log.format` | 로그 포맷 (`text`, `json`) | `text` |
+| `--version` | 버전 출력 후 종료 | - |
 
 ```bash
 # 기본 실행
