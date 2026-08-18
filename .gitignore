@@ -1,2 +1,6 @@
 .idea/
 config.yml
+
+# 빌드 파이프라인이 생성/커밋하는 build.txt는 제외
+*.txt
+!build.txt
