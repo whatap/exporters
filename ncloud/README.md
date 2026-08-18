@@ -145,6 +145,62 @@ namespaces:
 | `NCLOUD_CW_API_GW` | Cloud Insight API 엔드포인트 (기본: `https://cw.apigw.ntruss.com`) |
 | `NCLOUD_API_GW` | NCloud API Gateway 엔드포인트 (기본: `https://ncloud.apigw.ntruss.com`) |
 
+## VPC Server 기본 메트릭
+
+`config.example.yml`에 기본값으로 지정된 메트릭 목록. **15개 메트릭 → 인스턴스당 16 시리즈**로, Cloud Insight 배치 한도(20) 이내라 인스턴스 1대 기준 스크레이프당 API 호출 1회.
+
+`Default` = `config.example.yml` 기본 포함 여부, `Statistic` = 기본값으로 수집하는 aggregation. `X`인 메트릭도 `metrics`에 추가하면 수집 가능.
+
+`Description`은 Cloud Insight API 응답의 `desc` 값. 전체 27개 메트릭과 조회 방법은 [docs/metrics.md](docs/metrics.md) 참고.
+
+| Metric | Description | Aggregation (Min5) | Unit | Dimension | Default | Statistic |
+| --- | --- | --- | --- | --- | --- | --- |
+| **CPU** | | | | | | |
+| `avg_cpu_used_rto` | CPU Utilization Average | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | AVG ✅ |
+| `max_cpu_used_rto` | CPU used ratio maximum | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | MAX ✅ |
+| `load_average_1m` | CPU load 1 minute | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | AVG ✅ |
+| `load_average_5m` | CPU load 5 minute average | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | AVG ✅ |
+| `load_average_15m` | CPU load 15 minute average | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | AVG ✅ |
+| **Memory** | | | | | | |
+| `mem_usert` | Memory Utilization | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=memory) | O | AVG, MAX ✅ |
+| `swap_usert` | Swap used ratio | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=memory) | O | AVG ✅ |
+| **File System** | | | | | | |
+| `avg_fs_usert` | File System Utilization Average | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | AVG ✅ |
+| `max_fs_usert` | File system used ratio maximum | COUNT, SUM, MAX, MIN, AVG | % | instanceNo (type=svr) | O | MAX ✅ |
+| **Disk I/O** | | | | | | |
+| `avg_read_byt_cnt` | Disk read bytes average | COUNT, SUM, MAX, MIN, AVG | bytes/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_read_byt_cnt` | Disk read bytes maximum | COUNT, SUM, MAX, MIN, AVG | bytes/sec | instanceNo (type=svr) | X | - |
+| `avg_write_byt_cnt` | Disk write bytes average | COUNT, SUM, MAX, MIN, AVG | bytes/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_write_byt_cnt` | Disk write bytes maximum | COUNT, SUM, MAX, MIN, AVG | bytes/sec | instanceNo (type=svr) | X | - |
+| `avg_read_cnt` | Disk read count per second average | COUNT, SUM, MAX, MIN, AVG | num/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_read_cnt` | Disk read count per second maximum | COUNT, SUM, MAX, MIN, AVG | num/sec | instanceNo (type=svr) | X | - |
+| `avg_write_cnt` | Disk write count per second average | COUNT, SUM, MAX, MIN, AVG | num/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_write_cnt` | Disk write count per second maximum | COUNT, SUM, MAX, MIN, AVG | num/sec | instanceNo (type=svr) | X | - |
+| **Network** | | | | | | |
+| `avg_rcv_bps` | Network In Average | COUNT, SUM, MAX, MIN, AVG | bits/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_rcv_bps` | Network receive bits/sec maximum | COUNT, SUM, MAX, MIN, AVG | bits/sec | instanceNo (type=svr) | X | - |
+| `avg_snd_bps` | Network Out Average | COUNT, SUM, MAX, MIN, AVG | bits/sec | instanceNo (type=svr) | O | AVG ✅ |
+| `max_snd_bps` | Network send bits/sec maximum | COUNT, SUM, MAX, MIN, AVG | bits/sec | instanceNo (type=svr) | X | - |
+| `avg_rcv_pps` | Network receive packets/sec average | COUNT, SUM, MAX, MIN, AVG | packets/sec | instanceNo (type=svr) | X | - |
+| `max_rcv_pps` | Network receive packets/sec maximum | COUNT, SUM, MAX, MIN, AVG | packets/sec | instanceNo (type=svr) | X | - |
+| `avg_snd_pps` | Network send packets/sec average | COUNT, SUM, MAX, MIN, AVG | packets/sec | instanceNo (type=svr) | X | - |
+| `max_snd_pps` | Network send packets/sec maximum | COUNT, SUM, MAX, MIN, AVG | packets/sec | instanceNo (type=svr) | X | - |
+| **Not collected** | | | | | | |
+| `dev_nm` | Device name | **Not supported** (Min1 only) | - | instanceNo (type=fs, mnt_nm=/) | X | ⚠️ STRING type → no time series even if specified |
+| `mnt_stat_cd` | Mount state | **Not supported** (Min1 only) | - | instanceNo (type=fs, mnt_nm=/) | X | ⚠️ Available only with `interval: Min1` |
+
+### 선정 기준
+
+- 사용률(%) 4종(CPU / 메모리 / 파일시스템 / swap)은 대시보드·알람에 직접 사용 → 전부 포함
+- CPU·파일시스템은 피크도 함께 수집. 5분 평균만으로는 순간 스파이크와 디스크 full 직전을 놓침
+- 처리량(bps, bytes/sec, IOPS)은 평균만 수집. 피크까지 넣으면 시리즈 두 배
+- 패킷 수(pps)는 제외. bps로 대부분 판단 가능하며 필요 시 설정 파일의 주석 해제
+
+> **주의 — `avg_` / `max_` 접두사는 `aggregations` 설정과 별개.**
+> NCP 서버 에이전트가 수집 주기 내 값을 미리 집계해 **서로 다른 메트릭**으로 제공하는 것. `avg_cpu_used_rto` + `MAX`는 "평균값들 중 조회 구간의 최댓값"이지 순간 피크가 아님. 피크가 필요하면 `max_cpu_used_rto`를 사용.
+
+> **지원 Aggregation은 interval마다 다름.** 위 표는 기본값인 `Min5` 기준. 미지원 값을 지정하면 해당 값만 제외되고 `WARN` 로그 출력.
+
 ## 메트릭 형식
 
 ```
