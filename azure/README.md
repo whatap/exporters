@@ -89,6 +89,9 @@ credentials:
   client_id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
   client_secret: xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+# credentials 값은 환경변수로 오버라이드할 수 있습니다 (환경변수가 우선).
+#   AZURE_SUBSCRIPTION_ID, AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+
 targets:
   # aggregations 미지정 시 Total/Average/Minimum/Maximum 모두 수집
   - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
@@ -118,15 +121,6 @@ targets:
         aggregations:
           - Total
           - Maximum                      # → Total, Maximum (metric-level override)
-
-  # 20개 초과 시 target 분리 예시
-  - resource: /resourceGroups/openmetrics/providers/Microsoft.DBforPostgreSQL/flexibleServers/myserver
-    aggregations:
-      - Maximum
-    metrics:
-      - name: storage_percent
-      - name: iops
-      # ... 최대 20개
 
 resource_groups:
   - resource_group: "webapps"
@@ -168,6 +162,16 @@ Resolution order:
 3. If neither is specified, all aggregations are returned (`Total`, `Average`, `Minimum`, `Maximum`).
 
 Valid aggregation values: `Total`, `Average`, `Minimum`, `Maximum`
+
+### Metric 개수 제한 (20개)
+
+Azure Monitor REST API는 한 번의 요청에 리소스 1개당 최대 20개의 메트릭만 허용합니다.
+이 exporter는 한 target(또는 resource group / resource tag)에 20개를 초과하는
+메트릭을 설정해도, 동일한 aggregation 그룹 안에서 자동으로 20개 단위로 batch를
+분할하여 요청합니다. 따라서 메트릭이 많아도 **수동으로 target을 나눌 필요가 없습니다.**
+
+> 참고: 같은 metric을 서로 다른 aggregation으로 지정하면 aggregation 집합별로 그룹이
+> 나뉘며, 각 그룹이 다시 20개 단위로 분할됩니다.
 
 The `metric_namespace` property is optional for all filtering types.
 When the metric namespace is specified, it will be added as a prefix of the metric name.
