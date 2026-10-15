@@ -4,7 +4,7 @@ pipeline {
     }
 
     parameters {
-        choice(name: 'PROJECT', choices: ['azure', 'ncloud', 'all'], description: '빌드할 프로젝트')
+        choice(name: 'PROJECT', choices: ['azure', 'ncloud', 'ec2', 'all'], description: '빌드할 프로젝트')
         string(name: 'VERSION', defaultValue: '', description: '버전 (예: 1.0.1)')
     }
 
@@ -129,13 +129,14 @@ release_date=${releaseDate}
 
 // Helper Functions
 def getProjects() {
-    return params.PROJECT == 'all' ? ['azure', 'ncloud'] : [params.PROJECT]
+    return params.PROJECT == 'all' ? ['azure', 'ncloud', 'ec2'] : [params.PROJECT]
 }
 
 def getExporterName(String project) {
     def mapping = [
         'azure': 'azure_metrics_exporter',
-        'ncloud': 'ncloud_exporter'
+        'ncloud': 'ncloud_exporter',
+        'ec2': 'ec2_state_exporter'
     ]
     return mapping[project]
 }
