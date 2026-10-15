@@ -2,7 +2,7 @@
 
 ## 개요
 
-Exporter 프로젝트(azure, ncloud)의 빌드와 S3 배포를 위한 Jenkins Pipeline입니다.
+Exporter 프로젝트(azure, ncloud, ec2)의 빌드와 S3 배포를 위한 Jenkins Pipeline입니다.
 프로젝트가 추가되는 경우 매개변수에서 관리가 필요합니다.
 빌드와 배포가 분리되어 있어 독립적으로 실행할 수 있습니다.
 
@@ -21,7 +21,7 @@ Exporter 프로젝트(azure, ncloud)의 빌드와 S3 배포를 위한 Jenkins Pi
 
 | 이름 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| PROJECT | choice | O | `azure` / `ncloud` / `all` |
+| PROJECT | choice | O | `azure` / `ncloud` / `ec2` / `all` |
 | VERSION | string | O | SemVer 형식 (예: `1.0.0`, `2.1.3`) |
 
 ### 실행 흐름
@@ -57,6 +57,7 @@ Git 태그도 함께 생성됩니다: `v{VERSION}` (예: `v1.0.0`)
 |---------|----------------|
 | azure | azure_metrics_exporter |
 | ncloud | ncloud_exporter |
+| ec2 | ec2_state_exporter |
 
 ---
 
@@ -66,7 +67,7 @@ Git 태그도 함께 생성됩니다: `v{VERSION}` (예: `v1.0.0`)
 
 | 이름 | 타입 | 필수 | 설명 |
 |------|------|------|------|
-| PROJECT | choice | O | `azure` / `ncloud` / `all` |
+| PROJECT | choice | O | `azure` / `ncloud` / `ec2` / `all` |
 | VERSION | string | - | 배포할 버전. 빈 값이면 Git의 `build.txt`에서 자동으로 가져옴 |
 | BUILD_JOB_NUMBER | string | - | 빌드 Job 번호. 빈 값이면 Git에서 체크아웃 |
 
