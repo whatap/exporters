@@ -1,0 +1,125 @@
+# CloudWatch PromQL Exporter: AWS HealthOmics run metrics preset.
+#
+# HealthOmics publishes run metrics (aws.omics.*) to CloudWatch as OpenTelemetry metrics every
+# 30 seconds. They are only queryable with PromQL; the Classic GetMetricData API that
+# prometheus/cloudwatch_exporter uses does not return them.
+# Metric names, units and labels below were checked against a real run on 2026-11-04.
+#
+# Each query is an instant query evaluated every `interval`. CloudWatch bills PromQL per sample
+# scanned, so the cost follows `interval` and the number of queries, not the scrape rate.
+
+interval: 60s
+timeout: 30s
+# Serve the last good result for at most this long while CloudWatch queries fail.
+max_staleness: 3m
+
+queries:
+  # --- task CPU / memory (gauges) -----------------------------------------------------------
+  - name: aws_omics_task_cpu_usage
+    help: vCPUs in use by the HealthOmics task (aws.omics.task.cpu.usage).
+    query: '{"aws.omics.task.cpu.usage"}'
+    labels: &task_labels
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+
+  - name: aws_omics_task_cpu_limit
+    help: vCPUs reserved for the HealthOmics task (aws.omics.task.cpu.limit).
+    query: '{"aws.omics.task.cpu.limit"}'
+    labels: *task_labels
+
+  - name: aws_omics_task_memory_usage_bytes
+    help: Memory in use by the HealthOmics task (aws.omics.task.memory.usage).
+    query: '{"aws.omics.task.memory.usage"}'
+    labels: *task_labels
+
+  - name: aws_omics_task_memory_limit_bytes
+    help: Memory reserved for the HealthOmics task (aws.omics.task.memory.limit).
+    query: '{"aws.omics.task.memory.limit"}'
+    labels: *task_labels
+
+  # --- task I/O (cumulative sums) --------------------------------------------------------------
+  - name: aws_omics_task_network_io_bytes_total
+    help: Bytes received and transmitted by the HealthOmics task (aws.omics.task.network.io).
+    type: counter
+    query: '{"aws.omics.task.network.io"}'
+    labels:
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "network.io.direction": direction
+
+  - name: aws_omics_task_filesystem_io_bytes_total
+    help: Filesystem bytes read and written by the HealthOmics task (aws.omics.task.filesystem.io).
+    type: counter
+    query: '{"aws.omics.task.filesystem.io"}'
+    labels:
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "filesystem.io.direction": direction
+
+  - name: aws_omics_task_filesystem_operations_total
+    help: Filesystem read and write operations of the HealthOmics task (aws.omics.task.filesystem.operations).
+    type: counter
+    query: '{"aws.omics.task.filesystem.operations"}'
+    labels:
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "filesystem.io.direction": direction
+
+  # --- storage (gauges) ------------------------------------------------------------------------
+  # Published every 30 seconds in LOCAL scratch mode, every 20 minutes in SHARED mode.
+  - name: aws_omics_task_scratch_storage_usage_bytes
+    help: Scratch storage in use by the HealthOmics task (aws.omics.task.filesystem.scratch.storage.usage).
+    query: '{"aws.omics.task.filesystem.scratch.storage.usage"}'
+    labels:
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "scratch.storage.mode": scratch_mode
+
+  # Only for tasks whose scratchStorageMode is LOCAL.
+  - name: aws_omics_task_scratch_storage_limit_bytes
+    help: Scratch storage capacity of the HealthOmics task (aws.omics.task.filesystem.scratch.storage.limit).
+    query: '{"aws.omics.task.filesystem.scratch.storage.limit"}'
+    labels:
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "scratch.storage.mode": scratch_mode
+
+  - name: aws_omics_run_filesystem_usage_bytes
+    help: Storage in use on the run's shared filesystem (aws.omics.run.filesystem.usage).
+    query: '{"aws.omics.run.filesystem.usage"}'
+    labels: &run_labels
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "@resource.aws.omics.storage.type": storage_type
+
+  # Only for runs that use STATIC run storage.
+  - name: aws_omics_run_filesystem_limit_bytes
+    help: Capacity of the run's shared filesystem (aws.omics.run.filesystem.limit).
+    query: '{"aws.omics.run.filesystem.limit"}'
+    labels: *run_labels
+
+  # --- GPU (gauges, one series per GPU; only tasks that use accelerators) ----------------------
+  - name: aws_omics_task_gpu_utilization_percent
+    help: GPU utilization of the HealthOmics task (aws.omics.task.gpu.utilization).
+    query: '{"aws.omics.task.gpu.utilization"}'
+    labels: &gpu_labels
+      "@resource.aws.omics.run.id": run_id
+      "@resource.aws.omics.task.id": task_id
+      "@resource.aws.omics.workflow.id": workflow_id
+      "gpu.id": gpu_id
+
+  - name: aws_omics_task_gpu_memory_usage_bytes
+    help: GPU memory in use by the HealthOmics task (aws.omics.task.gpu.memory.usage).
+    query: '{"aws.omics.task.gpu.memory.usage"}'
+    labels: *gpu_labels
+
+  - name: aws_omics_task_gpu_memory_limit_bytes
+    help: GPU memory available to the HealthOmics task (aws.omics.task.gpu.memory.limit).
+    query: '{"aws.omics.task.gpu.memory.limit"}'
+    labels: *gpu_labels

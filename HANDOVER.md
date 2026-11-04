@@ -15,6 +15,8 @@
 | `azure/` | Azure Monitor | [RobustPerception/azure_metrics_exporter](https://github.com/RobustPerception/azure_metrics_exporter) 포크 | **v1.0.0 배포 완료** |
 | `ncloud/` | Naver Cloud Platform (Cloud Insight) | 자체 구현 (와탭 [agency](https://github.com/whatap/agency)로 이관 예정) | 개발 진행 중 |
 | `ec2/` | AWS EC2 lifecycle 상태 (`DescribeInstances`) | 자체 구현 | **v0.1.0** (SERVER-2139 자동 해지용, OpenAgent 1.8.11+) |
+| `cloudwatch-promql/` | CloudWatch PromQL 조회 API (OTel 지표, 예: HealthOmics run metrics) | 자체 구현 | **v0.1.0** 개발 완료, 미배포 |
+| `healthomics/` | AWS HealthOmics run·task 상태와 Run Analyzer 비용 | 자체 구현 | **v0.1.0** 개발 완료, 미배포 |
 | `jenkins/` | 빌드/배포 파이프라인 (Jenkinsfile) | - | 운영 중 |
 
 ### 저장소 구조
@@ -58,7 +60,7 @@ DevOps 담당: **신한국** 님
 
 | 이름 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `PROJECT` | choice | O | `azure` / `ncloud` / `ec2` / `all` |
+| `PROJECT` | choice | O | `azure` / `ncloud` / `ec2` / `cloudwatch-promql` / `healthomics` / `all` |
 | `VERSION` | string | O | SemVer 형식(`1.0.0`), 정규식 `^\d+\.\d+\.\d+$` 검증 |
 
 **실행 흐름**
@@ -80,7 +82,7 @@ Validate Parameters → Checkout → Update build.txt → Build → Archive Arti
 
 | 이름 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `PROJECT` | choice | O | `azure` / `ncloud` / `ec2` / `all` |
+| `PROJECT` | choice | O | `azure` / `ncloud` / `ec2` / `cloudwatch-promql` / `healthomics` / `all` |
 | `VERSION` | string | - | 빈 값이면 Git의 `build.txt`에서 자동 조회 |
 | `BUILD_JOB_NUMBER` | string | - | 빈 값이면 Git에서 체크아웃 |
 
@@ -110,6 +112,8 @@ s3://repo.whatap.io/exporter/
 | `azure` | `azure_metrics_exporter` |
 | `ncloud` | `ncloud_exporter` |
 | `ec2` | `ec2_state_exporter` |
+| `cloudwatch-promql` | `cloudwatch_promql_exporter` |
+| `healthomics` | `healthomics_exporter` |
 
 예시 (`PROJECT=azure`, `VERSION=1.0.0`):
 
