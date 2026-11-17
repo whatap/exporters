@@ -64,12 +64,21 @@ type metricNamespaceResponse struct {
 type AzureMetricValueResponse struct {
 	Value []struct {
 		Timeseries []struct {
+			// One entry per dimension the series was split by.
+			Metadatavalues []struct {
+				Name struct {
+					LocalizedValue string `json:"localizedValue"`
+					Value          string `json:"value"`
+				} `json:"name"`
+				Value string `json:"value"`
+			} `json:"metadatavalues"`
 			Data []struct {
 				TimeStamp string  `json:"timeStamp"`
 				Total     float64 `json:"total"`
 				Average   float64 `json:"average"`
 				Minimum   float64 `json:"minimum"`
 				Maximum   float64 `json:"maximum"`
+				Count     float64 `json:"count"`
 			} `json:"data"`
 		} `json:"timeseries"`
 		ID   string `json:"id"`
@@ -584,8 +593,13 @@ type batchRequest struct {
 	Method      string `json:"httpMethod"`
 }
 
-func resourceURLFrom(resource string, metricNamespace string, metricNames string, aggregations []string) string {
+func resourceURLFrom(resource string, metricNamespace string, metricNames string, aggregations []string, dimensions []string, top int) string {
 	apiVersion := "2018-01-01"
+	if len(dimensions) > 0 {
+		// Multi-dimensional metric values need 2019-07-01 or later. Requests
+		// without dimensions keep the version they have always used.
+		apiVersion = "2019-07-01"
+	}
 
 	path := fmt.Sprintf(
 		"/subscriptions/%s%s/providers/microsoft.insights/metrics",
@@ -606,6 +620,18 @@ func resourceURLFrom(resource string, metricNamespace string, metricNames string
 	values.Add("aggregation", strings.Join(filtered, ","))
 	values.Add("timespan", fmt.Sprintf("%s/%s", startTime, endTime))
 	values.Add("api-version", apiVersion)
+	if len(dimensions) > 0 {
+		// "<dimension> eq '*'" returns one time series per dimension value.
+		clauses := make([]string, 0, len(dimensions))
+		for _, d := range dimensions {
+			clauses = append(clauses, fmt.Sprintf("%s eq '*'", d))
+		}
+		values.Add("$filter", strings.Join(clauses, " and "))
+		// Without top, Azure returns at most 10 time series per metric.
+		if top > 0 {
+			values.Add("top", strconv.Itoa(top))
+		}
+	}
 
 	url := url.URL{
 		Path:     path,

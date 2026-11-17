@@ -6,6 +6,8 @@ import (
 	"log"
 	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -124,15 +126,19 @@ func filterAggregations(aggregations []string) []string {
 	return base
 }
 
-// metricGroup represents a group of metrics sharing the same aggregation set
+// metricGroup represents metrics that can share one Azure Monitor request:
+// same aggregation set, same dimensions to split by and same top.
 type metricGroup struct {
 	metricNames  []string
 	aggregations []string
+	dimensions   []string
+	top          int
 }
 
-// groupMetricsByAggregation groups metrics by their effective aggregation.
-// Metrics with per-metric aggregations are grouped together if they share the same set.
-// Metrics without per-metric aggregations use the resource-level fallback and are grouped together.
+// groupMetricsByAggregation groups metrics by their effective aggregation,
+// dimensions and top. A dimension filter applies to every metric in a request,
+// so metrics split by different dimensions (or not split) never share one.
+// Metrics without per-metric aggregations use the resource-level fallback.
 func groupMetricsByAggregation(metrics []config.Metric, resourceAggregations []string) []metricGroup {
 	groups := make(map[string]*metricGroup)
 
@@ -144,13 +150,15 @@ func groupMetricsByAggregation(metrics []config.Metric, resourceAggregations []s
 			aggr = filterAggregations(resourceAggregations)
 		}
 
-		key := strings.Join(aggr, ",")
+		key := strings.Join(aggr, ",") + "|" + strings.Join(m.Dimensions, ",") + "|" + strconv.Itoa(m.Top)
 		if g, ok := groups[key]; ok {
 			g.metricNames = append(g.metricNames, m.Name)
 		} else {
 			groups[key] = &metricGroup{
 				metricNames:  []string{m.Name},
 				aggregations: aggr,
+				dimensions:   m.Dimensions,
+				top:          m.Top,
 			}
 		}
 	}
@@ -165,8 +173,26 @@ func groupMetricsByAggregation(metrics []config.Metric, resourceAggregations []s
 			result = append(result, metricGroup{
 				metricNames:  g.metricNames[i:j],
 				aggregations: g.aggregations,
+				dimensions:   g.dimensions,
+				top:          g.top,
 			})
 		}
 	}
 	return result
+}
+
+// dimensionLabel returns the Prometheus label name for an Azure dimension.
+// Azure may return dimension names lowercased, so the label is always lowercase.
+func dimensionLabel(name string) string {
+	return "dimension_" + invalidLabelChars.ReplaceAllString(strings.ToLower(name), "_")
+}
+
+// seriesKey identifies one exported series by name and label set.
+func seriesKey(name string, labels map[string]string) string {
+	pairs := make([]string, 0, len(labels))
+	for k, v := range labels {
+		pairs = append(pairs, k+"\xff"+v)
+	}
+	sort.Strings(pairs)
+	return name + "\xfe" + strings.Join(pairs, "\xfe")
 }

@@ -161,7 +161,44 @@ Resolution order:
 2. Otherwise, fall back to the resource-level `aggregations`.
 3. If neither is specified, all aggregations are returned (`Total`, `Average`, `Minimum`, `Maximum`).
 
-Valid aggregation values: `Total`, `Average`, `Minimum`, `Maximum`
+Valid aggregation values: `Total`, `Average`, `Minimum`, `Maximum`, `Count`
+
+`Count`는 기간 안의 샘플 수입니다. 지정했을 때만 수집하고, aggregations를 생략했을 때의 기본 수집에는 들어가지 않습니다.
+집계마다 메트릭 이름 끝에 붙는 접미사는 다음과 같습니다.
+
+| Aggregation | 접미사 |
+|---|---|
+| `Total` | `_total` |
+| `Average` | `_average` |
+| `Minimum` | `_min` |
+| `Maximum` | `_max` |
+| `Count` | `_count` |
+
+### Dimension 분할 수집
+
+메트릭에 `dimensions`를 지정하면 Dimension 값마다 시계열을 따로 수집합니다.
+Dimension 값은 `dimension_<소문자 Dimension 이름>` 라벨로 붙습니다.
+
+```yaml
+targets:
+  - resource: /resourceGroups/openmetrics/providers/Microsoft.EventHub/namespaces/myhub
+    metrics:
+      - name: IncomingMessages
+        aggregations: [Total, Count]
+        dimensions: [EntityName]
+        top: 50
+```
+
+```text
+incomingmessages_count_total{dimension_entityname="orders",resource_group="openmetrics",resource_name="myhub",resource_type="Microsoft.EventHub/namespaces"} 120
+incomingmessages_count_count{dimension_entityname="orders",resource_group="openmetrics",resource_name="myhub",resource_type="Microsoft.EventHub/namespaces"} 12
+```
+
+- `dimensions`: 나눌 Dimension 이름 목록입니다. Azure Monitor 요청에 `$filter=<이름> eq '*'`로 들어갑니다. 여러 개를 쓰면 값의 조합마다 시계열이 생깁니다.
+- `top`: 메트릭 하나에서 가져올 시계열의 최대 개수입니다. 생략하면 Azure 기본값인 10개까지만 옵니다. Dimension 값이 10개보다 많으면 늘려야 합니다.
+- Dimension 필터는 한 요청 안의 모든 메트릭에 걸립니다. 그래서 `aggregations`, `dimensions`, `top`이 모두 같은 메트릭끼리만 한 요청으로 묶습니다. 지정한 Dimension을 지원하지 않는 메트릭이 있으면 그 요청이 실패하고 로그에 `Received 400 status`가 남습니다.
+- Dimension을 지정한 요청은 Azure Monitor metrics API `2019-07-01`을 씁니다. 다차원 조회에 필요한 버전입니다. Dimension이 없는 메트릭은 기존과 같은 `2018-01-01`을 씁니다.
+- 메트릭별 Dimension 이름은 Azure Monitor 지원 메트릭 문서나 Azure 포털 메트릭 화면의 분할(Apply splitting) 목록에서 확인합니다.
 
 ### Metric 개수 제한 (20개)
 
