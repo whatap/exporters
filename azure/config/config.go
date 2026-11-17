@@ -59,7 +59,7 @@ func (sc *SafeConfig) ReloadConfig(confFile string) (err error) {
 	return nil
 }
 
-var validAggregations = []string{"Total", "Average", "Minimum", "Maximum"}
+var validAggregations = []string{"Total", "Average", "Minimum", "Maximum", "Count"}
 
 func (c *Config) Validate() (err error) {
 	for _, t := range c.Targets {
@@ -67,7 +67,7 @@ func (c *Config) Validate() (err error) {
 			return err
 		}
 		for _, m := range t.Metrics {
-			if err := c.validateAggregations(m.Aggregations); err != nil {
+			if err := c.validateMetric(m); err != nil {
 				return err
 			}
 		}
@@ -90,7 +90,7 @@ func (c *Config) Validate() (err error) {
 			return err
 		}
 		for _, m := range t.Metrics {
-			if err := c.validateAggregations(m.Aggregations); err != nil {
+			if err := c.validateMetric(m); err != nil {
 				return err
 			}
 		}
@@ -113,7 +113,7 @@ func (c *Config) Validate() (err error) {
 			return err
 		}
 		for _, m := range t.Metrics {
-			if err := c.validateAggregations(m.Aggregations); err != nil {
+			if err := c.validateMetric(m); err != nil {
 				return err
 			}
 		}
@@ -148,6 +148,39 @@ func (c *Config) validateAggregations(aggregations []string) error {
 		}
 	}
 
+	return nil
+}
+
+// validateMetric checks one metric entry: its aggregations and the dimension
+// split settings that become the Azure Monitor $filter and top parameters.
+func (c *Config) validateMetric(m Metric) error {
+	if err := c.validateAggregations(m.Aggregations); err != nil {
+		return err
+	}
+
+	seen := make(map[string]bool, len(m.Dimensions))
+	for _, d := range m.Dimensions {
+		if strings.TrimSpace(d) == "" {
+			return fmt.Errorf("metric %s: dimension name must not be empty", m.Name)
+		}
+		// The name goes into "<name> eq '*'" unescaped.
+		if strings.Contains(d, "'") {
+			return fmt.Errorf("metric %s: dimension %q must not contain a single quote", m.Name, d)
+		}
+		// Label names are lowercased, so these would collide.
+		key := strings.ToLower(d)
+		if seen[key] {
+			return fmt.Errorf("metric %s: dimension %q is listed more than once", m.Name, d)
+		}
+		seen[key] = true
+	}
+
+	if m.Top < 0 {
+		return fmt.Errorf("metric %s: top must not be negative", m.Name)
+	}
+	if m.Top > 0 && len(m.Dimensions) == 0 {
+		return fmt.Errorf("metric %s: top is only used with dimensions", m.Name)
+	}
 	return nil
 }
 
@@ -218,10 +251,13 @@ type ResourceTag struct {
 	XXX map[string]interface{} `yaml:",inline"`
 }
 
-// Metric defines metric name and optional per-metric aggregations
+// Metric defines metric name, optional per-metric aggregations and the
+// dimensions to split the metric by (one time series per dimension value).
 type Metric struct {
 	Name         string   `yaml:"name"`
 	Aggregations []string `yaml:"aggregations"`
+	Dimensions   []string `yaml:"dimensions"`
+	Top          int      `yaml:"top"`
 
 	XXX map[string]interface{} `yaml:",inline"`
 }

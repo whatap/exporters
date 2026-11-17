@@ -53,21 +53,18 @@ type resourceMeta struct {
 	resource        AzureResource
 }
 
-func (c *Collector) extractMetrics(ch chan<- prometheus.Metric, rm resourceMeta, httpStatusCode int, metricValueData AzureMetricValueResponse, publishedResources map[string]bool) {
+func (c *Collector) extractMetrics(ch chan<- prometheus.Metric, rm resourceMeta, httpStatusCode int, metricValueData AzureMetricValueResponse, publishedResources map[string]bool, publishedSeries map[string]bool) {
 	if httpStatusCode != 200 {
 		log.Printf("Received %d status for resource %s. %s", httpStatusCode, rm.resourceURL, metricValueData.APIError.Message)
 		return
 	}
 
-	if len(metricValueData.Value) == 0 || len(metricValueData.Value[0].Timeseries) == 0 {
+	if len(metricValueData.Value) == 0 {
 		log.Printf("Metric %v not found at target %v\n", rm.metrics, rm.resourceURL)
 		return
 	}
-	if len(metricValueData.Value[0].Timeseries[0].Data) == 0 {
-		log.Printf("No metric data returned for metric %v at target %v\n", rm.metrics, rm.resourceURL)
-		return
-	}
 
+	exported := false
 	for _, value := range metricValueData.Value {
 		// Ensure Azure metric names conform to Prometheus metric name conventions
 		metricName := strings.Replace(value.Name.Value, " ", "_", -1)
@@ -78,44 +75,59 @@ func (c *Collector) extractMetrics(ch chan<- prometheus.Metric, rm resourceMeta,
 		}
 		metricName = invalidMetricChars.ReplaceAllString(metricName, "_")
 
-		if len(value.Timeseries) > 0 {
-			metricValue := value.Timeseries[0].Data[len(value.Timeseries[0].Data)-1]
+		// A metric split by dimensions has one time series per dimension value.
+		// A metric with no data in the window is skipped on its own so that the
+		// other metrics of the same request are still exported.
+		if len(value.Timeseries) == 0 {
+			log.Printf("No metric data returned for metric %v at target %v\n", value.Name.Value, rm.resourceURL)
+			continue
+		}
+		for _, series := range value.Timeseries {
+			if len(series.Data) == 0 {
+				continue
+			}
+			metricValue := series.Data[len(series.Data)-1]
 			labels := CreateResourceLabels(rm.resourceURL)
+			for _, dimension := range series.Metadatavalues {
+				if dimension.Name.Value != "" {
+					labels[dimensionLabel(dimension.Name.Value)] = dimension.Value
+				}
+			}
+
+			emit := func(suffix string, v float64) {
+				name := metricName + suffix
+				// A repeated series would make the whole scrape fail.
+				key := seriesKey(name, labels)
+				if publishedSeries[key] {
+					log.Printf("Skipping repeated series %s %v at target %v\n", name, labels, rm.resourceURL)
+					return
+				}
+				publishedSeries[key] = true
+				ch <- prometheus.MustNewConstMetric(prometheus.NewDesc(name, name, nil, labels), prometheus.GaugeValue, v)
+				exported = true
+			}
 
 			if hasAggregation(rm.aggregations, "Total") {
-				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(metricName+"_total", metricName+"_total", nil, labels),
-					prometheus.GaugeValue,
-					metricValue.Total,
-				)
+				emit("_total", metricValue.Total)
 			}
-
 			if hasAggregation(rm.aggregations, "Average") {
-				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(metricName+"_average", metricName+"_average", nil, labels),
-					prometheus.GaugeValue,
-					metricValue.Average,
-				)
+				emit("_average", metricValue.Average)
 			}
-
 			if hasAggregation(rm.aggregations, "Minimum") {
-				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(metricName+"_min", metricName+"_min", nil, labels),
-					prometheus.GaugeValue,
-					metricValue.Minimum,
-				)
+				emit("_min", metricValue.Minimum)
 			}
-
 			if hasAggregation(rm.aggregations, "Maximum") {
-				ch <- prometheus.MustNewConstMetric(
-					prometheus.NewDesc(metricName+"_max", metricName+"_max", nil, labels),
-					prometheus.GaugeValue,
-					metricValue.Maximum,
-				)
+				emit("_max", metricValue.Maximum)
+			}
+			if hasAggregation(rm.aggregations, "Count") {
+				emit("_count", metricValue.Count)
 			}
 		}
 	}
 
+	if !exported {
+		return
+	}
 	if _, ok := publishedResources[rm.resource.ID]; !ok {
 		infoLabels := CreateAllResourceLabelsFrom(rm)
 		ch <- prometheus.MustNewConstMetric(
@@ -129,6 +141,7 @@ func (c *Collector) extractMetrics(ch chan<- prometheus.Metric, rm resourceMeta,
 
 func (c *Collector) batchCollectMetrics(ch chan<- prometheus.Metric, resources []resourceMeta) {
 	var publishedResources = map[string]bool{}
+	var publishedSeries = map[string]bool{}
 
 	// collect metrics in batches
 	for i := 0; i < len(resources); i += batchSize {
@@ -158,7 +171,7 @@ func (c *Collector) batchCollectMetrics(ch chan<- prometheus.Metric, resources [
 		}
 
 		for k, resp := range batchData.Responses {
-			c.extractMetrics(ch, resources[i+k], resp.HttpStatusCode, resp.Content, publishedResources)
+			c.extractMetrics(ch, resources[i+k], resp.HttpStatusCode, resp.Content, publishedResources, publishedSeries)
 		}
 	}
 }
@@ -229,7 +242,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 			rm.metricNamespace = target.MetricNamespace
 			rm.metrics = strings.Join(group.metricNames, ",")
 			rm.aggregations = group.aggregations
-			rm.resourceURL = resourceURLFrom(target.Resource, rm.metricNamespace, rm.metrics, rm.aggregations)
+			rm.resourceURL = resourceURLFrom(target.Resource, rm.metricNamespace, rm.metrics, rm.aggregations, group.dimensions, group.top)
 			incompleteResources = append(incompleteResources, rm)
 		}
 	}
@@ -252,7 +265,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 				rm.metricNamespace = resourceGroup.MetricNamespace
 				rm.metrics = strings.Join(group.metricNames, ",")
 				rm.aggregations = group.aggregations
-				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
+				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations, group.dimensions, group.top)
 				rm.resource = f
 				resources = append(resources, rm)
 			}
@@ -278,7 +291,7 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 				rm.metricNamespace = resourceTag.MetricNamespace
 				rm.metrics = strings.Join(group.metricNames, ",")
 				rm.aggregations = group.aggregations
-				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations)
+				rm.resourceURL = resourceURLFrom(f.ID, rm.metricNamespace, rm.metrics, rm.aggregations, group.dimensions, group.top)
 				incompleteResources = append(incompleteResources, rm)
 			}
 		}
